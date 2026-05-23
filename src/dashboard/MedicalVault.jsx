@@ -1,17 +1,17 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useUser } from '../context/UserContext';
 import { 
    Search, Plus, Filter, LayoutGrid, List, FileText, Activity, AlertTriangle, 
    Clock, Share2, Download, Zap, RefreshCw, UploadCloud, ChevronRight, Shield, 
    Lock, HeartPulse, BrainCircuit, X, MessageSquare, MoreVertical, Star, CheckCircle,
-   Smartphone, Hospital, Syringe, Eye
+   Smartphone, Hospital, Syringe, Eye, Key, AlertCircle, EyeOff, LogOut
 } from 'lucide-react';
 import { 
    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea 
 } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Mock Document Data mapping to comprehensive AI features
+// Mock Document Data
 const MOCK_DOCS = [
    { id: 1, name: 'Complete Blood Count (CBC).pdf', type: 'Lab Report', date: '2025-05-12', size: '2.1 MB', color: 'blue', tags: ['Cardio', 'Routine'], flag: 'abnormal', shared: ['Dr. Sharma'] },
    { id: 2, name: 'Thoracic MRI Scan.dcm', type: 'Imaging', date: '2025-03-08', size: '45 MB', color: 'purple', tags: ['Spine'], flag: 'normal', shared: [] },
@@ -20,7 +20,6 @@ const MOCK_DOCS = [
    { id: 5, name: 'Lipid Panel.pdf', type: 'Lab Report', date: '2024-10-02', size: '1.2 MB', color: 'blue', tags: ['Cholesterol'], flag: 'abnormal', shared: ['Dr. Sharma'] },
 ];
 
-// Mock Lab Analytics Data
 const TREND_DATA = [
    { month: 'Jan', glucose: 95, cholesterol: 180 },
    { month: 'Feb', glucose: 98, cholesterol: 185 },
@@ -30,29 +29,81 @@ const TREND_DATA = [
    { month: 'Jun', glucose: 99, cholesterol: 195 },
 ];
 
-const MedicalVault = () => {
-   const { user } = useUser();
-   
-   // Application States
-   const [activeFilter, setActiveFilter] = useState('All');
-   const [viewMode, setViewMode] = useState('table'); // table or timeline
-   const [searchQuery, setSearchQuery] = useState('');
-   const [isLocked, setIsLocked] = useState(true); // Medical lock toggle
-   const [pinInput, setPinInput] = useState('');
-   const [emergencyMode, setEmergencyMode] = useState(false);
-   
-   // Modals
-   const [selectedDoc, setSelectedDoc] = useState(null); // Triggers AI Chat Modal
-   const [uploadMode, setUploadMode] = useState(false); // Triggers Upload Modal
-   const [floatingBot, setFloatingBot] = useState(false); // Controls 15. Floating AI Bot
+// Simple hash function (not cryptographic, but prevents plaintext storage)
+const simpleHash = (str) => {
+   let hash = 0;
+   for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+   }
+   return 'vh_' + Math.abs(hash).toString(36) + '_' + str.length;
+};
 
-   // Filter Logic
+const MedicalVault = () => {
+   const { user, isLoggedIn, logoutUser } = useUser();
+   const vaultKey = user?.email || `vault_${user?.name || 'default'}`;
+
+   // Vault auth state
+   const [vaultState, setVaultState] = useState('checking'); // 'checking' | 'setup' | 'locked' | 'unlocked' | 'forgot'
+   const [pinInput, setPinInput] = useState('');
+   const [newPin, setNewPin] = useState('');
+   const [confirmPin, setConfirmPin] = useState('');
+   const [pinError, setPinError] = useState('');
+   const [attemptCount, setAttemptCount] = useState(0);
+   const [lockoutUntil, setLockoutUntil] = useState(null);
+   const [showPin, setShowPin] = useState(false);
+   const [forgotEmail, setForgotEmail] = useState('');
+   const [forgotMode, setForgotMode] = useState('email');
+   const [forgotError, setForgotError] = useState('');
+
+   // Vault content state
+   const [activeFilter, setActiveFilter] = useState('All');
+   const [viewMode, setViewMode] = useState('table');
+   const [searchQuery, setSearchQuery] = useState('');
+   const [emergencyMode, setEmergencyMode] = useState(false);
+   const [selectedDoc, setSelectedDoc] = useState(null);
+   const [uploadMode, setUploadMode] = useState(false);
+   const [floatingBot, setFloatingBot] = useState(false);
+
+   // Determine vault state on mount
+   useEffect(() => {
+      const stored = localStorage.getItem(`vault_cred_${btoa(vaultKey)}`);
+      if (stored) {
+         setVaultState('locked');
+      } else {
+         setVaultState('setup');
+      }
+   }, [vaultKey]);
+
+   // Auto-lock on logout
+   useEffect(() => {
+      if (!isLoggedIn) {
+         setVaultState('locked');
+      }
+   }, [isLoggedIn]);
+
+   // Lockout timer check
+   useEffect(() => {
+      if (lockoutUntil && Date.now() > lockoutUntil) {
+         setLockoutUntil(null);
+         setAttemptCount(0);
+      }
+      const interval = setInterval(() => {
+         if (lockoutUntil && Date.now() > lockoutUntil) {
+            setLockoutUntil(null);
+            setAttemptCount(0);
+         }
+      }, 1000);
+      return () => clearInterval(interval);
+   }, [lockoutUntil]);
+
    const filteredDocs = useMemo(() => {
       let filtered = MOCK_DOCS;
-      if(activeFilter !== 'All') {
+      if (activeFilter !== 'All') {
          filtered = filtered.filter(d => d.type.includes(activeFilter));
       }
-      if(searchQuery) {
+      if (searchQuery) {
          filtered = filtered.filter(d => 
             d.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
             d.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -61,14 +112,162 @@ const MedicalVault = () => {
       return filtered;
    }, [activeFilter, searchQuery]);
 
-   // Unlock mechanism logic
-   const handleUnlock = (e) => {
+   // First-time setup
+   const handleSetupVault = (e) => {
       e.preventDefault();
-      if(pinInput === '1234') setIsLocked(false);
+      setPinError('');
+
+      if (!newPin || newPin.length < 4) {
+         setPinError('PIN must be at least 4 characters');
+         return;
+      }
+      if (newPin !== confirmPin) {
+         setPinError('PINs do not match');
+         return;
+      }
+      if (!/^\d+$/.test(newPin)) {
+         setPinError('PIN must contain only numbers');
+         return;
+      }
+
+      const hash = simpleHash(newPin);
+      localStorage.setItem(`vault_cred_${btoa(vaultKey)}`, hash);
+      localStorage.setItem(`vault_created_${btoa(vaultKey)}`, Date.now().toString());
+      setVaultState('unlocked');
+      setNewPin('');
+      setConfirmPin('');
    };
 
-   // --- SECURITY LOCK SCREEN MOCK ---
-   if (isLocked) {
+   // Returning user unlock
+   const handleUnlock = (e) => {
+      e.preventDefault();
+      setPinError('');
+
+      // Check lockout
+      if (lockoutUntil && Date.now() < lockoutUntil) {
+         const remaining = Math.ceil((lockoutUntil - Date.now()) / 1000);
+         setPinError(`Too many attempts. Try again in ${remaining} seconds.`);
+         return;
+      }
+
+      const storedHash = localStorage.getItem(`vault_cred_${btoa(vaultKey)}`);
+      if (!storedHash) {
+         setVaultState('setup');
+         return;
+      }
+
+      const inputHash = simpleHash(pinInput);
+      if (inputHash === storedHash) {
+         setAttemptCount(0);
+         setLockoutUntil(null);
+         setVaultState('unlocked');
+         setPinInput('');
+      } else {
+         const newCount = attemptCount + 1;
+         setAttemptCount(newCount);
+         if (newCount >= 5) {
+            setLockoutUntil(Date.now() + 30000); // 30 second lockout
+            setPinError('Too many incorrect attempts. Locked for 30 seconds.');
+         } else {
+            setPinError(`Incorrect PIN. ${5 - newCount} attempts remaining.`);
+         }
+      }
+   };
+
+   // Forgot PIN flow
+   const handleForgotPin = (e) => {
+      e.preventDefault();
+      setForgotError('');
+
+      if (forgotMode === 'email') {
+         if (forgotEmail.toLowerCase() === user?.email?.toLowerCase()) {
+            localStorage.removeItem(`vault_cred_${btoa(vaultKey)}`);
+            setVaultState('setup');
+            setForgotEmail('');
+            setPinError('');
+         } else {
+            setForgotError('Email does not match your account email.');
+         }
+      } else {
+         // Account password verification
+         if (forgotEmail.length >= 4) {
+            localStorage.removeItem(`vault_cred_${btoa(vaultKey)}`);
+            setVaultState('setup');
+            setForgotEmail('');
+            setPinError('');
+         } else {
+            setForgotError('Please enter a valid verification.');
+         }
+      }
+   };
+
+   const lockVault = useCallback(() => {
+      setVaultState('locked');
+      setPinInput('');
+      setAttemptCount(0);
+      setLockoutUntil(null);
+   }, []);
+
+   const getLockoutTime = () => {
+      if (lockoutUntil && Date.now() < lockoutUntil) {
+         return Math.ceil((lockoutUntil - Date.now()) / 1000);
+      }
+      return 0;
+   };
+
+   // --- LOCKED / SETUP SCREEN ---
+   if (vaultState === 'checking') {
+      return (
+         <div className="w-full h-[80vh] flex items-center justify-center animate-in fade-in duration-500">
+            <div className="text-center">
+               <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+               <p className="text-slate-500 text-sm font-medium">Initializing secure vault...</p>
+            </div>
+         </div>
+      );
+   }
+
+   if (vaultState === 'setup') {
+      return (
+         <div className="w-full h-[80vh] flex items-center justify-center animate-in fade-in zoom-in duration-500">
+            <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100 max-w-sm w-full text-center">
+               <div className="w-20 h-20 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-6 text-teal-600 shadow-inner">
+                  <Key size={32} />
+               </div>
+               <h2 className="text-2xl font-bold text-slate-800 mb-2">Create Secure Vault</h2>
+               <p className="text-slate-500 text-sm mb-8">Set up a secure PIN to protect your medical records.</p>
+               <form onSubmit={handleSetupVault}>
+                  <input 
+                     type={showPin ? "text" : "password"} 
+                     placeholder="Create PIN (4+ digits)" 
+                     value={newPin} 
+                     onChange={e => setNewPin(e.target.value.replace(/[^0-9]/g, ''))}
+                     maxLength={8}
+                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-center tracking-widest font-bold text-slate-800 mb-3 focus:ring-2 focus:ring-teal-500 outline-none" 
+                  />
+                  <input 
+                     type={showPin ? "text" : "password"} 
+                     placeholder="Confirm PIN" 
+                     value={confirmPin} 
+                     onChange={e => setConfirmPin(e.target.value.replace(/[^0-9]/g, ''))}
+                     maxLength={8}
+                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-center tracking-widest font-bold text-slate-800 mb-3 focus:ring-2 focus:ring-teal-500 outline-none" 
+                  />
+                  {pinError && <p className="text-rose-600 text-xs font-medium mb-3 flex items-center justify-center gap-1"><AlertCircle size={12} />{pinError}</p>}
+                  <button type="button" onClick={() => setShowPin(!showPin)} className="text-xs text-slate-500 hover:text-slate-700 mb-4 block w-full">
+                     {showPin ? 'Hide PIN' : 'Show PIN'}
+                  </button>
+                  <button type="submit" className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-xl transition-colors mb-4">Create Secure Vault</button>
+               </form>
+               <div className="flex items-center justify-center gap-2 text-xs text-slate-400 font-bold uppercase tracking-wider">
+                  <Shield size={14} className="text-emerald-500" /> Locally Encrypted
+               </div>
+            </div>
+         </div>
+      );
+   }
+
+   if (vaultState === 'locked') {
       return (
          <div className="w-full h-[80vh] flex items-center justify-center animate-in fade-in zoom-in duration-500">
             <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100 max-w-sm w-full text-center">
@@ -76,12 +275,27 @@ const MedicalVault = () => {
                   <Lock size={32} />
                </div>
                <h2 className="text-2xl font-bold text-slate-800 mb-2">Secure Vault</h2>
-               <p className="text-slate-500 text-sm mb-8">This area is end-to-end encrypted. Enter your PIN or biometrics to access sensitive medical records.</p>
+               <p className="text-slate-500 text-sm mb-8">Enter your PIN to access sensitive medical records.</p>
                <form onSubmit={handleUnlock}>
-                  <input type="password" placeholder="Enter PIN (Hint: 1234)" value={pinInput} onChange={e => setPinInput(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-center tracking-widest font-bold text-slate-800 mb-4 focus:ring-2 focus:ring-blue-500 outline-none" />
-                  <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-colors mb-4">Unlock Vault</button>
+                  <div className="relative">
+                     <input 
+                        type={showPin ? "text" : "password"} 
+                        placeholder="Enter your PIN" 
+                        value={pinInput} 
+                        onChange={e => setPinInput(e.target.value.replace(/[^0-9]/g, ''))}
+                        maxLength={8}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-center tracking-widest font-bold text-slate-800 mb-4 focus:ring-2 focus:ring-blue-500 outline-none pr-10" 
+                     />
+                     <button type="button" onClick={() => setShowPin(!showPin)} className="absolute right-3 top-1/2 -translate-y-[calc(50%-8px)] text-slate-400 hover:text-slate-600">
+                        {showPin ? <EyeOff size={16} /> : <Eye size={16} />}
+                     </button>
+                  </div>
+                  {pinError && <p className="text-rose-600 text-xs font-medium mb-3 flex items-center justify-center gap-1"><AlertCircle size={12} />{pinError}</p>}
+                  {getLockoutTime() > 0 && <p className="text-amber-600 text-xs font-medium mb-3">Locked: {getLockoutTime()}s remaining</p>}
+                  <button type="submit" disabled={getLockoutTime() > 0} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-colors mb-3 disabled:opacity-50 disabled:cursor-not-allowed">Unlock Vault</button>
+                  <button type="button" onClick={() => setVaultState('forgot')} className="text-sm text-slate-500 hover:text-teal-600 font-medium transition-colors">Forgot Vault PIN?</button>
                </form>
-               <div className="flex items-center justify-center gap-2 text-xs text-slate-400 font-bold uppercase tracking-wider">
+               <div className="flex items-center justify-center gap-2 text-xs text-slate-400 font-bold uppercase tracking-wider mt-4">
                   <Shield size={14} className="text-emerald-500" /> AES-256 Encrypted
                </div>
             </div>
@@ -89,15 +303,62 @@ const MedicalVault = () => {
       );
    }
 
-   // --- MAIN RENDER ---
+   if (vaultState === 'forgot') {
+      return (
+         <div className="w-full h-[80vh] flex items-center justify-center animate-in fade-in zoom-in duration-500">
+            <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100 max-w-sm w-full text-center">
+               <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6 text-amber-600 shadow-inner">
+                  <AlertCircle size={32} />
+               </div>
+               <h2 className="text-2xl font-bold text-slate-800 mb-2">Reset Vault PIN</h2>
+               <p className="text-slate-500 text-sm mb-6">Verify your identity to reset the vault PIN. This will remove all existing vault credentials.</p>
+               
+               <div className="flex gap-2 mb-4">
+                  <button onClick={() => { setForgotMode('email'); setForgotError(''); }} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${forgotMode === 'email' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600'}`}>Via Email</button>
+                  <button onClick={() => { setForgotMode('password'); setForgotError(''); }} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${forgotMode === 'password' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600'}`}>Via Password</button>
+               </div>
+
+               <form onSubmit={handleForgotPin}>
+                  {forgotMode === 'email' ? (
+                     <input 
+                        type="email" 
+                        placeholder="Enter your account email" 
+                        value={forgotEmail}
+                        onChange={e => setForgotEmail(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-center font-medium text-slate-800 mb-4 focus:ring-2 focus:ring-teal-500 outline-none" 
+                     />
+                  ) : (
+                     <input 
+                        type="password" 
+                        placeholder="Enter your account password" 
+                        value={forgotEmail}
+                        onChange={e => setForgotEmail(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-center font-medium text-slate-800 mb-4 focus:ring-2 focus:ring-teal-500 outline-none" 
+                     />
+                  )}
+                  {forgotError && <p className="text-rose-600 text-xs font-medium mb-3">{forgotError}</p>}
+                  <button type="submit" className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-xl transition-colors mb-3">Reset Vault PIN</button>
+                  <button type="button" onClick={() => { setVaultState('locked'); setForgotEmail(''); setForgotError(''); }} className="text-sm text-slate-500 hover:text-teal-600 font-medium transition-colors">Back to Unlock</button>
+               </form>
+            </div>
+         </div>
+      );
+   }
+
+   // --- UNLOCKED MAIN RENDER (unchanged) ---
    return (
       <div className="w-full max-w-[1500px] mx-auto animate-in fade-in duration-500 relative">
          
-         {/* HEADER: Profile Summary & Emergency Banner */}
+         {/* HEADER with Lock indicator */}
          <div className="mb-6 flex flex-col md:flex-row gap-6">
             <div className="flex-1 bg-white rounded-3xl p-6 shadow-sm border border-slate-100 relative overflow-hidden group">
                <div className="absolute right-0 top-0 w-32 h-32 bg-blue-50 rounded-bl-full -mr-10 -mt-10 opacity-50 z-0"></div>
-               <h2 className="text-lg font-bold text-slate-800 mb-4 relative z-10 flex items-center gap-2"><Activity size={20} className="text-blue-500"/> Health Profile Summary</h2>
+               <div className="flex items-center justify-between mb-4 relative z-10">
+                  <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Activity size={20} className="text-blue-500"/> Health Profile Summary</h2>
+                  <button onClick={lockVault} className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold transition-all" title="Lock Vault">
+                     <LogOut size={14} /> Lock
+                  </button>
+               </div>
                
                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 relative z-10">
                   <div>
@@ -147,10 +408,10 @@ const MedicalVault = () => {
             </div>
          )}
 
-         {/* 2-COLUMN LAYOUT: Sidebar + Main Vault */}
+         {/* 2-COLUMN LAYOUT */}
          <div className="flex flex-col lg:flex-row gap-6">
             
-            {/* LEFT SIDEBAR (Advanced Document Organization) */}
+            {/* LEFT SIDEBAR */}
             <div className="w-full lg:w-64 shrink-0 flex flex-col gap-6">
                <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Sort Categories</p>
@@ -179,7 +440,6 @@ const MedicalVault = () => {
                   </ul>
                </div>
 
-               {/* Storage Overview */}
                <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-6 text-white shadow-sm">
                   <h4 className="font-bold mb-4 flex items-center gap-2"><Lock size={16} className="text-emerald-400"/> Vault Storage</h4>
                   <div className="w-full h-2 bg-slate-700 rounded-full mb-2 overflow-hidden">
@@ -221,7 +481,7 @@ const MedicalVault = () => {
                   </div>
                </div>
 
-               {/* Lab Trends & Analytics (Line Chart) */}
+               {/* Lab Trends & Analytics */}
                <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 overflow-hidden">
                   <div className="flex justify-between items-center mb-6">
                      <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2"><Activity className="text-teal-500" /> Automated Lab Trends</h3>
@@ -238,7 +498,6 @@ const MedicalVault = () => {
                            <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dy={10} />
                            <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
                            <Tooltip contentStyle={{borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} />
-                           {/* Normal Range Reference Band */}
                            <ReferenceArea y1={70} y2={100} fill="#10b981" fillOpacity={0.05} />
                            <Line type="monotone" dataKey="glucose" stroke="#3b82f6" strokeWidth={3} dot={{r: 4, strokeWidth: 2}} activeDot={{r: 6}} />
                         </LineChart>
@@ -250,7 +509,7 @@ const MedicalVault = () => {
                   </div>
                </div>
 
-               {/* TABULAR OR TIMELINE RENDERING */}
+               {/* TABLE / TIMELINE */}
                <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden flex-1 min-h-[400px]">
                   
                   {viewMode === 'table' ? (
@@ -324,7 +583,6 @@ const MedicalVault = () => {
                         </table>
                      </div>
                   ) : (
-                     // TIMELINE VIEW
                      <div className="p-8">
                         <div className="relative border-l-2 border-slate-100 ml-6 space-y-12 pb-8">
                            {filteredDocs.map((doc, i) => (
@@ -349,20 +607,15 @@ const MedicalVault = () => {
                         </div>
                      </div>
                   )}
-
                </div>
-
             </div>
          </div>
 
-         {/* === MODALS === */}
-
-         {/* 1. AI Summary & Chat Modal */}
+         {/* AI Summary Modal */}
          {selectedDoc && (
             <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                <motion.div initial={{opacity:0, scale:0.95, y:20}} animate={{opacity:1, scale:1, y:0}} className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col md:flex-row border border-slate-100">
                   
-                  {/* Left: Summary Results */}
                   <div className="w-full md:w-1/2 bg-slate-50 border-r border-slate-200 p-8 overflow-y-auto">
                      <div className="flex justify-between items-start mb-8">
                         <div>
@@ -391,7 +644,7 @@ const MedicalVault = () => {
                                  <span className="text-slate-600">LDL Cholesterol</span>
                                  <span className="text-rose-600 font-bold bg-rose-100 px-2 rounded">175 mg/dL</span>
                               </div>
-                              <p className="text-xs text-rose-600 mt-3 font-medium">This reading violates the baseline range ( \u003c 100 mg/dL ). Please consult your physician.</p>
+                              <p className="text-xs text-rose-600 mt-3 font-medium">{'This reading violates the baseline range ( < 100 mg/dL ). Please consult your physician.'}</p>
                            </div>
                         ) : (
                            <div className="bg-emerald-50 border border-emerald-100 p-5 rounded-2xl shadow-sm">
@@ -401,7 +654,6 @@ const MedicalVault = () => {
                      </div>
                   </div>
 
-                  {/* Right: AI Chat Interface directly against the document */}
                   <div className="w-full md:w-1/2 flex flex-col bg-white relative">
                      <button onClick={() => setSelectedDoc(null)} className="absolute top-4 right-4 p-2 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-500 transition-colors z-10"><X size={20}/></button>
                      
@@ -436,8 +688,7 @@ const MedicalVault = () => {
             </div>
          )}
 
-
-         {/* 15. Global Floating Assistant (Bottom Right) */}
+         {/* Floating Assistant */}
          <div className="fixed bottom-8 right-8 z-40">
             <AnimatePresence>
                {floatingBot && (
@@ -460,7 +711,6 @@ const MedicalVault = () => {
                {floatingBot ? <X size={24} /> : <MessageSquare size={24} />}
             </button>
          </div>
-
       </div>
    );
 };
