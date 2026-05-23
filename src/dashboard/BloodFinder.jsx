@@ -73,6 +73,8 @@ const BloodFinder = () => {
       if (locationData[city]) {
         setSearchResult(locationData[city]);
         setSearchedCity(city.charAt(0).toUpperCase() + city.slice(1));
+        // Auto-select O- for urgent need when a city is found
+        setSelectedBlood("O-");
       } else {
         setSearchResult(null);
         setSearchedCity(city.charAt(0).toUpperCase() + city.slice(1));
@@ -307,18 +309,26 @@ const BloodFinder = () => {
 
       {/* Urgent Alert */}
       {searchResult && (
-        <div className="bg-rose-50 border-2 border-rose-200 rounded-3xl p-6 flex items-start gap-4">
+        <div className="bg-rose-50 border-2 border-rose-200 rounded-3xl p-6 flex items-start gap-4 max-md:flex-col max-md:items-stretch">
           <AlertCircle size={24} className="text-rose-600 shrink-0 mt-1" />
-          <div>
+          <div className="flex-1">
             <h3 className="font-bold text-rose-900 text-lg mb-1">Urgent: O- Blood Needed</h3>
             <p className="text-rose-700 text-sm">A patient requires O- blood immediately. If you can donate, please contact the nearest blood bank directly or register as a donor.</p>
           </div>
-          <button
-            onClick={() => setShowRegisterModal(true)}
-            className="bg-rose-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-rose-700 transition-all shrink-0"
-          >
-            Donate Now
-          </button>
+          <div className="flex gap-2 shrink-0">
+            <button
+              onClick={() => { setSelectedBlood("O-"); }}
+              className="bg-rose-100 text-rose-700 px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-rose-200 transition-all flex items-center gap-1.5"
+            >
+              <Search size={14} /> Find O- Banks
+            </button>
+            <button
+              onClick={() => setShowRegisterModal(true)}
+              className="bg-rose-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-rose-700 transition-all shrink-0"
+            >
+              Donate Now
+            </button>
+          </div>
         </div>
       )}
 
