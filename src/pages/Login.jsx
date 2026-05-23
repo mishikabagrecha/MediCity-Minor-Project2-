@@ -88,9 +88,9 @@ const Login = () => {
               </label>
             </div>
             <div className="text-sm">
-              <a href="#" className="font-medium text-teal-600 hover:text-teal-500">
+              <button type="button" onClick={() => alert('Password reset link would be sent to your email.')} className="font-medium text-teal-600 hover:text-teal-500">
                 Forgot your password?
-              </a>
+              </button>
             </div>
           </div>
 
@@ -116,7 +116,7 @@ const Login = () => {
               <button
                 type="button"
                 className="w-full inline-flex justify-center py-3 px-4 border border-slate-300 rounded-lg shadow-sm bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
-                onClick={() => {}}
+                onClick={() => alert('Google OAuth integration coming soon. Use email sign in.')}
               >
                 <img className="h-5 w-5 mr-2" src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google logo" />
                 Google

@@ -57,7 +57,7 @@ const Schemes = () => {
           </div>
           <p className="text-teal-50">Based on your provided demographic (Income: {user?.scheme_data?.income || "Undisclosed"}, State: {user?.scheme_data?.state || "Undisclosed"}, Category: {user?.scheme_data?.category || "Undisclosed"}), our system filtered <strong>{eligibleSchemes.length} matching schemes</strong> dynamically.</p>
         </div>
-        <button className="bg-white text-teal-700 px-6 py-3 rounded-xl font-bold shadow-md hover:shadow-lg transition-all w-full md:w-auto text-center">
+        <button onClick={() => window.location.href = '/dashboard/profile'} className="bg-white text-teal-700 px-6 py-3 rounded-xl font-bold shadow-md hover:shadow-lg transition-all w-full md:w-auto text-center">
           Update Profile Info
         </button>
       </div>
@@ -104,10 +104,19 @@ const Schemes = () => {
             </div>
             
             <div className="bg-slate-50 p-4 border-t border-slate-100 flex gap-3">
-              <button className="flex-1 bg-gradient-to-r from-teal-600 to-blue-600 text-white py-2.5 rounded-lg font-medium text-sm flex items-center justify-center gap-2 hover:shadow-md transition-shadow">
+              <button onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(scheme.name + ' eligibility')}`, '_blank')} className="flex-1 bg-gradient-to-r from-teal-600 to-blue-600 text-white py-2.5 rounded-lg font-medium text-sm flex items-center justify-center gap-2 hover:shadow-md transition-shadow">
                 Check Eligibility <ExternalLink size={16} />
               </button>
-              <button className="flex-1 bg-white border border-slate-300 text-slate-700 py-2.5 rounded-lg font-medium text-sm hover:bg-slate-50 transition-colors flex items-center justify-center gap-2">
+              <button onClick={() => {
+                if (navigator.geolocation) {
+                  navigator.geolocation.getCurrentPosition(
+                    (pos) => window.open(`https://www.google.com/maps/search/${encodeURIComponent(scheme.name + ' hospital near me')}/@${pos.coords.latitude},${pos.coords.longitude}`, '_blank'),
+                    () => window.open(`https://www.google.com/maps/search/${encodeURIComponent(scheme.name + ' hospital')}`, '_blank')
+                  );
+                } else {
+                  window.open(`https://www.google.com/maps/search/${encodeURIComponent(scheme.name + ' hospital')}`, '_blank');
+                }
+              }} className="flex-1 bg-white border border-slate-300 text-slate-700 py-2.5 rounded-lg font-medium text-sm hover:bg-slate-50 transition-colors flex items-center justify-center gap-2">
                 <MapPin size={16} /> Locate Counters
               </button>
             </div>
@@ -118,7 +127,7 @@ const Schemes = () => {
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 mt-8 text-center max-w-3xl mx-auto">
          <h3 className="text-lg font-bold text-slate-900 mb-2">Explore State-Specific Schemes</h3>
          <p className="text-slate-600 text-sm mb-6">Looking for schemes specific to Maharashtra, MP, or Karnataka? Browse through the complete catalog of state health schemes.</p>
-         <button className="border border-teal-600 text-teal-700 px-6 py-2.5 rounded-xl font-medium hover:bg-teal-50 transition-colors">
+         <button onClick={() => window.open('https://www.pmjay.gov.in', '_blank')} className="border border-teal-600 text-teal-700 px-6 py-2.5 rounded-xl font-medium hover:bg-teal-50 transition-colors">
            Browse State Catalog
          </button>
       </div>
