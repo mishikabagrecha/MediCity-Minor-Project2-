@@ -21,6 +21,9 @@ const Exercise = () => {
   const lastFrameTimeRef = useRef(0);
   const lastRepTimeRef = useRef(0);
   const durationRef = useRef(null);
+  const mockAngleRef = useRef(160);
+  const angleDirectionRef = useRef(1);
+  const repStateRef = useRef('detecting');
   
   const exercises = [
     { id: 'bicep-curl', name: 'Bicep Curls', target: '3 sets × 12 reps', icon: '💪', color: 'blue' },
@@ -114,20 +117,24 @@ const Exercise = () => {
   useEffect(() => {
     if (!isActive) return;
     
-    let angleDirection = 1;
-    let mockAngle = 160;
+    mockAngleRef.current = 160;
+    angleDirectionRef.current = 1;
+    repStateRef.current = 'detecting';
+    setRepState('detecting');
     
     const interval = setInterval(() => {
-      mockAngle += angleDirection * 3;
-      if (mockAngle > 170) angleDirection = -1;
-      if (mockAngle < 30) angleDirection = 1;
+      mockAngleRef.current += angleDirectionRef.current * 3;
+      if (mockAngleRef.current > 170) angleDirectionRef.current = -1;
+      if (mockAngleRef.current < 30) angleDirectionRef.current = 1;
       
-      setCurrentAngle(mockAngle);
+      setCurrentAngle(mockAngleRef.current);
       setPoseDetected(true);
 
-      if (mockAngle < 50 && repState !== 'down') {
+      if (mockAngleRef.current < 50 && repStateRef.current !== 'down') {
+        repStateRef.current = 'down';
         setRepState('down');
-      } else if (mockAngle > 150 && repState === 'down') {
+      } else if (mockAngleRef.current > 150 && repStateRef.current === 'down') {
+        repStateRef.current = 'up';
         setRepState('up');
         setRepCount(prev => {
           const newCount = prev + 1;
@@ -137,7 +144,10 @@ const Exercise = () => {
           }
           return newCount;
         });
-        setTimeout(() => setRepState('detecting'), 300);
+        setTimeout(() => {
+          repStateRef.current = 'detecting';
+          setRepState('detecting');
+        }, 300);
       }
       
       const score = Math.floor(70 + Math.random() * 25);
@@ -145,7 +155,7 @@ const Exercise = () => {
     }, 200);
 
     return () => clearInterval(interval);
-  }, [isActive, repState]);
+  }, [isActive]); // Only depend on isActive, not repState
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
