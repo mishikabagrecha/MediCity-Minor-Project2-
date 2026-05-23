@@ -16,6 +16,8 @@ const Consultation = () => {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [meetingLink, setMeetingLink] = useState('');
   const [meetingMotive, setMeetingMotive] = useState('');
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [joinLink, setJoinLink] = useState('');
   
   const reportRef = useRef(null);
 
@@ -35,6 +37,20 @@ const Consultation = () => {
   const handleEndCall = () => {
     setActiveCall(false);
     setShowSummary(true);
+  };
+
+  const handleJoinNow = (doctor) => {
+    setSelectedDoctor(doctor);
+    setJoinLink('');
+    setShowJoinModal(true);
+  };
+
+  const handleJoinMeeting = (e) => {
+    e.preventDefault();
+    if (joinLink.trim()) {
+      window.open(joinLink.trim(), '_blank');
+    }
+    setShowJoinModal(false);
   };
 
   const handleBooking = (doctor) => {
@@ -262,7 +278,7 @@ const Consultation = () => {
                 </div>
                 <div className="p-4 bg-slate-50/50 border-t border-slate-100 flex gap-3">
                   <button
-                    onClick={() => { if(doctor.available) { setSelectedDoctor(doctor); setActiveCall(true); } }}
+                    onClick={() => { if(doctor.available) handleJoinNow(doctor); }}
                     disabled={!doctor.available}
                     className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all ${
                       doctor.available ? 'bg-slate-900 text-white shadow-md hover:bg-slate-800' : 'bg-slate-200 text-slate-400 cursor-not-allowed'
@@ -293,6 +309,47 @@ const Consultation = () => {
           </button>
         </div>
       )}
+
+      {/* Join Meeting Modal */}
+      <AnimatePresence>
+        {showJoinModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowJoinModal(false)} />
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="bg-white rounded-3xl shadow-2xl relative z-10 w-full max-w-md overflow-hidden border border-slate-200">
+              <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <h3 className="text-xl font-bold text-slate-900">Join Meeting</h3>
+                <button onClick={() => setShowJoinModal(false)} className="text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
+              </div>
+              <div className="px-6 py-4 bg-white flex items-center gap-3">
+                <img src={selectedDoctor?.img} alt="" className="w-12 h-12 rounded-full object-cover" />
+                <div>
+                  <p className="text-xs text-slate-500">{selectedDoctor?.spec} • {selectedDoctor?.exp}</p>
+                  <p className="font-bold text-slate-900">{selectedDoctor?.name}</p>
+                </div>
+              </div>
+              <form onSubmit={handleJoinMeeting} className="p-6 pt-2 space-y-5">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    <Video size={14} className="inline mr-1" /> Google Meet Link
+                  </label>
+                  <input
+                    type="url"
+                    required
+                    value={joinLink}
+                    onChange={(e) => setJoinLink(e.target.value)}
+                    placeholder="https://meet.google.com/xxx-xxxx-xxx"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 font-medium text-sm"
+                  />
+                  <p className="text-xs text-slate-400 mt-2">Paste the Google Meet link shared by your doctor to join the video call.</p>
+                </div>
+                <button type="submit" className="w-full bg-teal-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-teal-600/30 hover:bg-teal-700 transition-colors flex items-center justify-center gap-2">
+                  <Video size={18} /> Join Meeting
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Booking Modal */}
       <AnimatePresence>
