@@ -121,39 +121,39 @@ const Signup = () => {
           <div className="flex-1">
             {step === 1 && (
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-                 <h3 className="text-xl font-bold border-b pb-2 mb-4 text-slate-700">Section 1: Personal Details</h3>
+                 <h3 className="text-xl font-bold border-b pb-2 mb-4 text-slate-700">Section 1: Personal Details <span className="text-xs font-normal text-rose-500 normal-case ml-2">(All fields mandatory)</span></h3>
                 <div className="grid grid-cols-2 gap-5">
                   <div>
-                    <label className="block text-sm font-bold text-slate-500 uppercase tracking-wide mb-1">First Name</label>
-                    <input name="name" value={formData.name} onChange={handleChange} required type="text" className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-shadow" placeholder="First Name" />
+                    <label className="block text-sm font-bold text-slate-500 uppercase tracking-wide mb-1">First Name <span className="text-rose-500">*</span></label>
+                    <input name="name" value={formData.name} onChange={handleChange} required type="text" className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-shadow invalid:border-rose-300 invalid:focus:ring-rose-500" placeholder="First Name" />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-500 uppercase tracking-wide mb-1">Last Name</label>
-                    <input name="lastName" value={formData.lastName} onChange={handleChange} required type="text" className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-shadow" placeholder="Last Name" />
+                    <label className="block text-sm font-bold text-slate-500 uppercase tracking-wide mb-1">Last Name <span className="text-rose-500">*</span></label>
+                    <input name="lastName" value={formData.lastName} onChange={handleChange} required type="text" className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-shadow invalid:border-rose-300 invalid:focus:ring-rose-500" placeholder="Last Name" />
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-5">
                   <div>
-                    <label className="block text-sm font-bold text-slate-500 uppercase tracking-wide mb-1">Age</label>
-                    <input name="age" value={formData.age} onChange={handleChange} required type="number" min="0" className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 focus:ring-2 focus:ring-teal-500 focus:border-teal-500" />
+                    <label className="block text-sm font-bold text-slate-500 uppercase tracking-wide mb-1">Age <span className="text-rose-500">*</span></label>
+                    <input name="age" value={formData.age} onChange={handleChange} required type="number" min="0" className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 invalid:border-rose-300 invalid:focus:ring-rose-500" />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-500 uppercase tracking-wide mb-1">Gender</label>
-                    <select name="gender" value={formData.gender} onChange={handleChange} required className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                    <label className="block text-sm font-bold text-slate-500 uppercase tracking-wide mb-1">Gender <span className="text-rose-500">*</span></label>
+                    <select name="gender" value={formData.gender} onChange={handleChange} required className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 invalid:border-rose-300 invalid:focus:ring-rose-500">
                       <option value="">Select</option>
                       <option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-500 uppercase tracking-wide mb-1">Phone Number</label>
-                    <input name="phone" value={formData.phone} onChange={handleChange} required type="tel" className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 focus:ring-2 focus:ring-teal-500 focus:border-teal-500" placeholder="+91" />
+                    <label className="block text-sm font-bold text-slate-500 uppercase tracking-wide mb-1">Phone Number <span className="text-rose-500">*</span></label>
+                    <input name="phone" value={formData.phone} onChange={handleChange} required type="tel" className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 focus:ring-2 focus:ring-teal-500 invalid:border-rose-300 invalid:focus:ring-rose-500" placeholder="+91" />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-500 uppercase tracking-wide mb-1">Full Address <span className="text-xs font-normal text-slate-400 normal-case">(For Ambulance Routing)</span></label>
+                  <label className="block text-sm font-bold text-slate-500 uppercase tracking-wide mb-1">Full Address <span className="text-xs font-normal text-slate-400 normal-case">(For Ambulance Routing)</span> <span className="text-rose-500">*</span></label>
                   <div className="relative">
                      <MapPin className="absolute top-3 left-3 text-slate-400" size={20} />
-                     <input name="address" value={formData.address} onChange={handleChange} required type="text" className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 pl-10 focus:ring-2 focus:ring-teal-500 focus:border-teal-500" placeholder="123 Example Street, City, State" />
+                     <input name="address" value={formData.address} onChange={handleChange} required type="text" className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 pl-10 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 invalid:border-rose-300 invalid:focus:ring-rose-500" placeholder="123 Example Street, City, State" />
                   </div>
                 </div>
               </div>

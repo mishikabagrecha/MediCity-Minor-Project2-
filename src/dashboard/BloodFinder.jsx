@@ -1,64 +1,45 @@
 import React, { useState } from 'react';
-import { Search, Droplets, MapPin, Heart, AlertCircle, Phone, Landmark, Navigation, CheckCircle, Filter, Loader2, X, User, Clock } from 'lucide-react';
+import { Search, Droplets, MapPin, Heart, AlertCircle, Phone, Landmark, Navigation, CheckCircle, Filter, Loader2, X, User, Clock, Building2 } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 
-// Location-specific data for supported cities
+// Blood banks data - each bank lists which blood groups they support
 const locationData = {
   indore: {
-    donors: [
-      { id: 1, name: "Rahul S.", blood: "O-", distance: "2.1 km", time: "8 mins", status: "Available", priority: true, phone: "+91 98765 43201", lastDonated: "1 month ago", lat: 22.7196, lng: 75.8577 },
-      { id: 2, name: "Priya M.", blood: "A+", distance: "3.4 km", time: "14 mins", status: "Available", priority: false, phone: "+91 98765 43202", lastDonated: "2 weeks ago", lat: 22.7208, lng: 75.8602 },
-      { id: 3, name: "Amit K.", blood: "B+", distance: "5.2 km", time: "20 mins", status: "Offline", priority: false, phone: "+91 98765 43203", lastDonated: "3 months ago", lat: 22.7234, lng: 75.8551 },
-      { id: 4, name: "Neha P.", blood: "AB+", distance: "1.8 km", time: "7 mins", status: "Available", priority: true, phone: "+91 98765 43204", lastDonated: "1 week ago", lat: 22.7185, lng: 75.8549 },
-      { id: 5, name: "Vikas J.", blood: "O+", distance: "4.0 km", time: "15 mins", status: "Available", priority: false, phone: "+91 98765 43205", lastDonated: "2 months ago", lat: 22.7241, lng: 75.8633 },
-    ],
     banks: [
-      { id: 1, name: "MY Hospital Blood Bank", blood: "All Types", distance: "1.5 km", units: 42, phone: "+91 731 252 4400", rating: 4.7, lat: 22.717, lng: 75.856 },
-      { id: 2, name: "Choithram Hospital", blood: "A+, O+, AB+", distance: "3.8 km", units: 28, phone: "+91 731 236 1492", rating: 4.5, lat: 22.729, lng: 75.871 },
-      { id: 3, name: "Bombay Hospital Indore", blood: "All Types", distance: "4.2 km", units: 55, phone: "+91 731 400 6666", rating: 4.8, lat: 22.708, lng: 75.843 },
-      { id: 4, name: "Apollo Hospitals Indore", blood: "O-, A+, B+", distance: "6.1 km", units: 34, phone: "+91 731 428 8888", rating: 4.6, lat: 22.741, lng: 75.893 },
+      { id: 1, name: "MY Hospital Blood Bank", groups: ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"], distance: "1.5 km", units: 42, phone: "+91 731 252 4400", rating: 4.7, lat: 22.717, lng: 75.856, timing: "24x7" },
+      { id: 2, name: "Choithram Hospital", groups: ["A+", "O+", "AB+", "B+"], distance: "3.8 km", units: 28, phone: "+91 731 236 1492", rating: 4.5, lat: 22.729, lng: 75.871, timing: "24x7" },
+      { id: 3, name: "Bombay Hospital Indore", groups: ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"], distance: "4.2 km", units: 55, phone: "+91 731 400 6666", rating: 4.8, lat: 22.708, lng: 75.843, timing: "24x7" },
+      { id: 4, name: "Apollo Hospitals Indore", groups: ["O-", "A+", "B+", "AB+"], distance: "6.1 km", units: 34, phone: "+91 731 428 8888", rating: 4.6, lat: 22.741, lng: 75.893, timing: "24x7" },
+      { id: 5, name: "Medanta Hospital Blood Bank", groups: ["A+", "B+", "O+", "AB+", "AB-"], distance: "5.0 km", units: 20, phone: "+91 731 467 8900", rating: 4.4, lat: 22.735, lng: 75.868, timing: "8 AM - 8 PM" },
+      { id: 6, name: "Red Cross Blood Bank Indore", groups: ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"], distance: "2.3 km", units: 48, phone: "+91 731 243 1100", rating: 4.9, lat: 22.721, lng: 75.861, timing: "8 AM - 6 PM" },
     ],
-    stats: { "A+": 18, "B+": 12, "O+": 22, "AB+": 8 },
+    stats: { "A+": 18, "B+": 12, "O+": 22, "AB+": 8, "A-": 5, "B-": 3, "O-": 7, "AB-": 4 },
   },
   ujjain: {
-    donors: [
-      { id: 1, name: "Rajesh V.", blood: "O-", distance: "1.2 km", time: "5 mins", status: "Available", priority: true, phone: "+91 98765 43210", lastDonated: "3 weeks ago", lat: 23.1824, lng: 75.7776 },
-      { id: 2, name: "Sunita R.", blood: "B+", distance: "2.8 km", time: "11 mins", status: "Available", priority: false, phone: "+91 98765 43211", lastDonated: "1 month ago", lat: 23.1845, lng: 75.7801 },
-      { id: 3, name: "Arjun T.", blood: "A+", distance: "4.5 km", time: "17 mins", status: "Offline", priority: false, phone: "+91 98765 43212", lastDonated: "2 months ago", lat: 23.1882, lng: 75.7743 },
-      { id: 4, name: "Meena D.", blood: "AB+", distance: "3.0 km", time: "12 mins", status: "Available", priority: true, phone: "+91 98765 43213", lastDonated: "2 weeks ago", lat: 23.1809, lng: 75.7788 },
-    ],
     banks: [
-      { id: 1, name: "Ujjain District Hospital", blood: "All Types", distance: "2.0 km", units: 38, phone: "+91 734 251 2300", rating: 4.3, lat: 23.178, lng: 75.772 },
-      { id: 2, name: "CR Gardi Hospital", blood: "A+, B+, O+", distance: "3.5 km", units: 22, phone: "+91 734 255 0666", rating: 4.4, lat: 23.191, lng: 75.789 },
-      { id: 3, name: "Dhanvantri Blood Bank", blood: "All Types", distance: "1.8 km", units: 31, phone: "+91 734 252 7777", rating: 4.6, lat: 23.185, lng: 75.775 },
+      { id: 1, name: "Ujjain District Hospital Blood Bank", groups: ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"], distance: "2.0 km", units: 38, phone: "+91 734 251 2300", rating: 4.3, lat: 23.178, lng: 75.772, timing: "24x7" },
+      { id: 2, name: "CR Gardi Hospital", groups: ["A+", "B+", "O+", "AB+"], distance: "3.5 km", units: 22, phone: "+91 734 255 0666", rating: 4.4, lat: 23.191, lng: 75.789, timing: "24x7" },
+      { id: 3, name: "Dhanvantri Blood Bank", groups: ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"], distance: "1.8 km", units: 31, phone: "+91 734 252 7777", rating: 4.6, lat: 23.185, lng: 75.775, timing: "7 AM - 9 PM" },
+      { id: 4, name: "Maharaja Yashwantrao Hospital", groups: ["A+", "B+", "O+", "AB+"], distance: "2.5 km", units: 25, phone: "+91 734 250 0011", rating: 4.2, lat: 23.182, lng: 75.776, timing: "24x7" },
     ],
-    stats: { "A+": 10, "B+": 14, "O+": 16, "AB+": 6 },
+    stats: { "A+": 10, "B+": 14, "O+": 16, "AB+": 6, "A-": 3, "B-": 2, "O-": 4, "AB-": 2 },
   },
   dewas: {
-    donors: [
-      { id: 1, name: "Sandeep C.", blood: "B+", distance: "1.5 km", time: "6 mins", status: "Available", priority: false, phone: "+91 98765 43220", lastDonated: "1 month ago", lat: 22.9634, lng: 76.0526 },
-      { id: 2, name: "Anita G.", blood: "O+", distance: "2.2 km", time: "9 mins", status: "Available", priority: true, phone: "+91 98765 43221", lastDonated: "1 week ago", lat: 22.9651, lng: 76.0543 },
-      { id: 3, name: "Deepak S.", blood: "A+", distance: "3.8 km", time: "15 mins", status: "Offline", priority: false, phone: "+91 98765 43222", lastDonated: "2 months ago", lat: 22.9687, lng: 76.0501 },
-      { id: 4, name: "Kavita R.", blood: "AB-", distance: "4.0 km", time: "16 mins", status: "Available", priority: true, phone: "+91 98765 43223", lastDonated: "3 weeks ago", lat: 22.9608, lng: 76.0489 },
-      { id: 5, name: "Manish P.", blood: "O-", distance: "2.8 km", time: "11 mins", status: "Available", priority: false, phone: "+91 98765 43224", lastDonated: "2 months ago", lat: 22.9622, lng: 76.0558 },
-    ],
     banks: [
-      { id: 1, name: "District Hospital Dewas", blood: "All Types", distance: "1.2 km", units: 25, phone: "+91 727 253 1100", rating: 4.2, lat: 22.961, lng: 76.051 },
-      { id: 2, name: "Sharma Blood Bank", blood: "A+, B+, O+", distance: "2.5 km", units: 18, phone: "+91 727 254 3322", rating: 4.0, lat: 22.972, lng: 76.058 },
-      { id: 3, name: "City Care Hospital", blood: "O-, A+, AB+", distance: "3.0 km", units: 14, phone: "+91 727 255 4400", rating: 4.1, lat: 22.967, lng: 76.046 },
+      { id: 1, name: "District Hospital Dewas Blood Bank", groups: ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"], distance: "1.2 km", units: 25, phone: "+91 727 253 1100", rating: 4.2, lat: 22.961, lng: 76.051, timing: "24x7" },
+      { id: 2, name: "Sharma Blood Bank", groups: ["A+", "B+", "O+", "AB+"], distance: "2.5 km", units: 18, phone: "+91 727 254 3322", rating: 4.0, lat: 22.972, lng: 76.058, timing: "9 AM - 6 PM" },
+      { id: 3, name: "City Care Hospital Blood Bank", groups: ["O-", "A+", "AB+", "B+"], distance: "3.0 km", units: 14, phone: "+91 727 255 4400", rating: 4.1, lat: 22.967, lng: 76.046, timing: "8 AM - 8 PM" },
+      { id: 4, name: "Mata Gujri Hospital", groups: ["A+", "O+", "B+", "AB+"], distance: "1.8 km", units: 12, phone: "+91 727 256 5500", rating: 4.3, lat: 22.964, lng: 76.053, timing: "24x7" },
     ],
-    stats: { "A+": 8, "B+": 10, "O+": 12, "AB+": 4 },
+    stats: { "A+": 8, "B+": 10, "O+": 12, "AB+": 4, "A-": 2, "B-": 1, "O-": 3, "AB-": 1 },
   },
 };
 
 const defaultData = {
-  donors: [
-    { id: 1, name: "Search for a city", blood: "—", distance: "—", time: "—", status: "Available", priority: false, phone: "—", lastDonated: "—", lat: 20.5937, lng: 78.9629 },
-  ],
   banks: [
-    { id: 1, name: "Enter a city above", blood: "—", distance: "—", units: 0, phone: "—", rating: 0, lat: 20.5937, lng: 78.9629 },
+    { id: 1, name: "Enter a city above to see blood banks", groups: [], distance: "—", units: 0, phone: "—", rating: 0, lat: 20.5937, lng: 78.9629, timing: "—" },
   ],
-  stats: { "A+": 0, "B+": 0, "O+": 0, "AB+": 0 },
+  stats: { "A+": 0, "B+": 0, "O+": 0, "AB+": 0, "A-": 0, "B-": 0, "O-": 0, "AB-": 0 },
 };
 
 const BloodFinder = () => {
@@ -76,9 +57,10 @@ const BloodFinder = () => {
 
   const currentData = searchResult || defaultData;
 
-  const filteredDonors = selectedBlood === "Any"
-    ? currentData.donors
-    : currentData.donors.filter(d => d.blood === selectedBlood);
+  // Filter banks based on selected blood group
+  const filteredBanks = selectedBlood === "Any"
+    ? currentData.banks
+    : currentData.banks.filter(bank => bank.groups.includes(selectedBlood));
 
   const handleSearch = () => {
     const city = location.trim().toLowerCase();
@@ -96,7 +78,7 @@ const BloodFinder = () => {
         setSearchedCity(city.charAt(0).toUpperCase() + city.slice(1));
       }
       setIsSearching(false);
-    }, 1000);
+    }, 800);
   };
 
   const handleCall = (phone) => {
@@ -132,7 +114,7 @@ const BloodFinder = () => {
           <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
             <Droplets size={28} className="text-rose-500" /> Blood Finder
           </h2>
-          <p className="text-slate-600 text-sm mt-1">Search for blood donors and banks in <strong>Indore</strong>, <strong>Ujjain</strong>, or <strong>Dewas</strong>.</p>
+          <p className="text-slate-600 text-sm mt-1">Find blood banks in <strong>Indore</strong>, <strong>Ujjain</strong>, or <strong>Dewas</strong> that have the blood type you need.</p>
         </div>
         <button
           onClick={() => setShowRegisterModal(true)}
@@ -145,7 +127,7 @@ const BloodFinder = () => {
       {/* Search & Filter */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
-          <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-2">Blood Group</label>
+          <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-2">Blood Group Needed</label>
           <div className="flex flex-wrap gap-1">
             {bloodTypes.map(type => (
               <button
@@ -161,7 +143,7 @@ const BloodFinder = () => {
           </div>
         </div>
         <div className="md:col-span-2">
-          <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-2">Location</label>
+          <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-2">City</label>
           <div className="relative">
             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input
@@ -201,7 +183,8 @@ const BloodFinder = () => {
       {searchResult && (
         <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-2">
           <CheckCircle size={16} className="text-emerald-600" />
-          Showing blood availability for <strong>{searchedCity}</strong>
+          Showing blood banks in <strong>{searchedCity}</strong>
+          {selectedBlood !== "Any" && <> for blood group <strong>{selectedBlood}</strong></>}
         </div>
       )}
       {!searchResult && searchedCity && !isSearching && (
@@ -213,7 +196,7 @@ const BloodFinder = () => {
       {!searchResult && !searchedCity && !isSearching && (
         <div className="bg-slate-50 border border-slate-200 text-slate-500 px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-2">
           <MapPin size={16} className="text-slate-400" />
-          Enter a city name (Indore, Ujjain, or Dewas) and click Search to find blood availability.
+          Enter a city name (Indore, Ujjain, or Dewas) and click Search to find blood banks.
         </div>
       )}
 
@@ -221,117 +204,106 @@ const BloodFinder = () => {
       {searchResult && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {Object.entries(currentData.stats).map(([type, units]) => (
-            <div key={type} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm text-center">
-              <p className="text-2xl font-black text-rose-600">{type}</p>
-              <p className="text-xs text-slate-500 mt-1">{units} units available</p>
+            <div key={type} className={`rounded-2xl p-4 border shadow-sm text-center transition-all ${
+              selectedBlood === type || (selectedBlood === "Any" && units > 0)
+                ? 'bg-rose-50 border-rose-200' 
+                : 'bg-white border-slate-200'
+            }`}>
+              <p className={`text-2xl font-black ${selectedBlood === type ? 'text-rose-600' : units > 0 ? 'text-slate-800' : 'text-slate-300'}`}>{type}</p>
+              <p className={`text-xs mt-1 ${units > 0 ? 'text-slate-500' : 'text-slate-300'}`}>{units} units available</p>
             </div>
           ))}
         </div>
       )}
 
-      {/* Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Individual Donors */}
-        <div>
-          <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-            <Heart size={20} className="text-rose-500" /> Individual Donors
-            <span className="text-xs font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{filteredDonors.length} found</span>
-          </h3>
-          <div className="space-y-4">
-            {filteredDonors.map(donor => (
-              <div key={donor.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-rose-100 rounded-full flex items-center justify-center text-rose-600 font-bold text-lg border-2 border-white shadow-sm shrink-0">
-                      {donor.blood}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-bold text-slate-900">{donor.name}</h4>
-                        {donor.priority && <span className="bg-rose-100 text-rose-700 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full">Urgent Match</span>}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-slate-500 font-medium">
-                        <span className={`w-2 h-2 rounded-full ${donor.status === 'Available' ? 'bg-emerald-500' : 'bg-slate-300'}`}></span>
-                        {donor.status}
-                        <span className="text-slate-300">•</span>
-                        <MapPin size={12} /> {donor.distance}
-                        <span className="text-slate-300">•</span>
-                        Last: {donor.lastDonated}
-                      </div>
-                    </div>
+      {/* Blood Banks List */}
+      <div>
+        <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+          <Building2 size={20} className="text-slate-500" /> Blood Banks & Hospitals
+          <span className="text-xs font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{filteredBanks.length} found</span>
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filteredBanks.map(bank => (
+            <div key={bank.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-slate-900 text-base truncate">{bank.name}</h4>
+                  <div className="flex items-center gap-2 text-sm text-slate-500 mt-1">
+                    <MapPin size={14} /> {bank.distance} away
+                    <span className="text-slate-300">•</span>
+                    <span className="text-amber-500">★</span> {bank.rating}
+                    <span className="text-slate-300">•</span>
+                    <span className="text-emerald-600 font-medium">{bank.timing}</span>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    disabled={donor.status !== 'Available' || donor.phone === "—"}
-                    onClick={() => donor.status === 'Available' && handleCall(donor.phone)}
-                    className={`flex-1 py-2 rounded-xl font-medium text-xs flex items-center justify-center gap-1 transition-all ${
-                      donor.status === 'Available' && donor.phone !== "—"
-                        ? 'bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 cursor-pointer'
-                        : 'bg-slate-50 text-slate-400 border border-slate-100 cursor-not-allowed'
-                    }`}
-                  >
-                    <Phone size={14} /> Contact
-                  </button>
-                  <button
-                    onClick={() => handleDirections(donor.lat, donor.lng, donor.name)}
-                    className="flex-1 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl font-medium text-xs hover:bg-slate-50 transition-all flex items-center justify-center gap-1 cursor-pointer"
-                  >
-                    <Navigation size={14} /> Directions
-                  </button>
+              </div>
+              
+              {/* Supported Blood Groups */}
+              <div className="mb-4">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Available Blood Groups</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"].map(type => {
+                    const isAvailable = bank.groups.includes(type);
+                    const isSelected = selectedBlood === type || (selectedBlood === "Any" && isAvailable);
+                    return (
+                      <span
+                        key={type}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                          isAvailable
+                            ? isSelected
+                              ? 'bg-rose-600 text-white'
+                              : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : 'bg-slate-50 text-slate-300 border border-slate-100 line-through'
+                        }`}
+                      >
+                        {type}
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
 
-        {/* Blood Banks */}
-        <div>
-          <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-            <Landmark size={20} className="text-slate-500" /> Blood Banks & Hospitals
-            <span className="text-xs font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{currentData.banks.length} found</span>
-          </h3>
-          <div className="space-y-4">
-            {currentData.banks.map(bank => (
-              <div key={bank.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
-                <div className="flex justify-between items-start mb-3">
-                  <h4 className="font-bold text-slate-900">{bank.name}</h4>
-                  <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2 py-1 rounded-full">Open</span>
+              {/* Units Info */}
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex justify-between items-center mb-4">
+                <div>
+                  <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Total Units</p>
+                  <p className={`font-bold text-lg ${bank.units > 20 ? 'text-teal-600' : bank.units > 10 ? 'text-amber-600' : 'text-rose-600'}`}>{bank.units}</p>
                 </div>
-                <div className="flex items-center gap-1 text-sm text-slate-500 mb-3">
-                  <MapPin size={14} /> {bank.distance} away
-                  <span className="text-slate-300 ml-2">•</span>
-                  <span className="text-amber-500">★</span> {bank.rating}
-                </div>
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex justify-between items-center mb-4">
-                  <div>
-                    <p className="text-xs text-slate-500 font-semibold mb-1 uppercase tracking-wider">Available Types</p>
-                    <p className="font-medium text-slate-800 text-sm">{bank.blood}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs text-slate-500 font-semibold mb-1 uppercase tracking-wider">Total Units</p>
-                    <p className={`font-bold text-lg ${bank.units > 0 ? 'text-teal-600' : 'text-slate-400'}`}>{bank.units > 0 ? bank.units : "—"}</p>
-                  </div>
-                </div>
-                <div className="flex gap-2 text-sm">
-                  <button
-                    onClick={() => handleDirections(bank.lat, bank.lng, bank.name)}
-                    className="flex-1 bg-white border border-slate-300 text-slate-700 py-2 rounded-xl font-medium hover:bg-slate-50 transition-all text-xs cursor-pointer"
-                  >
-                    Directions
-                  </button>
-                  <button
-                    onClick={() => handleCall(bank.phone)}
-                    className="flex-1 bg-slate-800 text-white py-2 rounded-xl font-medium hover:bg-slate-700 transition-all text-xs flex items-center justify-center gap-1 cursor-pointer"
-                  >
-                    <Phone size={14} /> Call
-                  </button>
+                <div className="text-right">
+                  <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Availability</p>
+                  <p className={`font-bold text-sm ${bank.units > 20 ? 'text-teal-600' : 'text-amber-600'}`}>
+                    {bank.units > 20 ? 'Well Stocked' : bank.units > 10 ? 'Moderate' : 'Low'}
+                  </p>
                 </div>
               </div>
-            ))}
-          </div>
+
+              <div className="flex gap-2 text-sm">
+                <button
+                  onClick={() => handleDirections(bank.lat, bank.lng, bank.name)}
+                  className="flex-1 bg-white border border-slate-300 text-slate-700 py-2.5 rounded-xl font-medium hover:bg-slate-50 transition-all text-xs flex items-center justify-center gap-1.5"
+                >
+                  <Navigation size={14} /> Directions
+                </button>
+                <button
+                  onClick={() => handleCall(bank.phone)}
+                  className="flex-1 bg-slate-800 text-white py-2.5 rounded-xl font-medium hover:bg-slate-700 transition-all text-xs flex items-center justify-center gap-1.5"
+                >
+                  <Phone size={14} /> Call
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
+
+      {/* Empty state */}
+      {searchResult && filteredBanks.length === 0 && (
+        <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
+          <Droplets size={48} className="text-slate-300 mx-auto mb-4" />
+          <h3 className="font-bold text-slate-600 text-lg mb-1">No blood banks found</h3>
+          <p className="text-sm text-slate-400">No blood banks in {searchedCity} have blood group {selectedBlood} available. Try a different blood group or city.</p>
+        </div>
+      )}
 
       {/* Urgent Alert */}
       {searchResult && (
@@ -339,11 +311,11 @@ const BloodFinder = () => {
           <AlertCircle size={24} className="text-rose-600 shrink-0 mt-1" />
           <div>
             <h3 className="font-bold text-rose-900 text-lg mb-1">Urgent: O- Blood Needed</h3>
-            <p className="text-rose-700 text-sm">A patient at a local hospital requires O- blood immediately. If you can donate, please contact the blood bank or register as a donor.</p>
+            <p className="text-rose-700 text-sm">A patient requires O- blood immediately. If you can donate, please contact the nearest blood bank directly or register as a donor.</p>
           </div>
           <button
             onClick={() => setShowRegisterModal(true)}
-            className="bg-rose-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-rose-700 transition-all shrink-0 cursor-pointer"
+            className="bg-rose-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-rose-700 transition-all shrink-0"
           >
             Donate Now
           </button>
@@ -364,7 +336,7 @@ const BloodFinder = () => {
                     </h3>
                     <button
                       onClick={() => setShowRegisterModal(false)}
-                      className="p-2 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                      className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
                     >
                       <X size={20} className="text-slate-400" />
                     </button>
@@ -419,7 +391,7 @@ const BloodFinder = () => {
                   </div>
                   <button
                     type="submit"
-                    className="w-full bg-rose-600 text-white py-3 rounded-xl font-bold hover:bg-rose-700 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full bg-rose-600 text-white py-3 rounded-xl font-bold hover:bg-rose-700 transition-all flex items-center justify-center gap-2"
                   >
                     <Heart size={18} /> Register Now
                   </button>
