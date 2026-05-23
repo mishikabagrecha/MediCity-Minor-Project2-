@@ -34,37 +34,94 @@ const VoiceAssistant = () => {
     checkVapi();
   }, []);
 
+  // Use refs to avoid stale closures in speech recognition callbacks
+  const handleSendRef = useRef(handleSend);
+  const toggleListeningRef = useRef(toggleListening);
+  
+  // Keep refs updated with latest functions
+  useEffect(() => {
+    handleSendRef.current = handleSend;
+  }, [handleSend]);
+
+  useEffect(() => {
+    toggleListeningRef.current = toggleListening;
+  }, [toggleListening]);
+
   // Speech Recognition Setup
   useEffect(() => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = true;
-      recognitionRef.current.lang = 'en-US';
-
-      recognitionRef.current.onresult = (event) => {
-        const transcript = Array.from(event.results)
-          .map(result => result[0].transcript)
-          .join('');
-        setInput(transcript);
-        
-        if (event.results[0].isFinal) {
-          const finalTranscript = event.results[0][0].transcript;
-          handleSend(finalTranscript);
-        }
-      };
-
-      recognitionRef.current.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        setIsListening(false);
-      };
-
-      recognitionRef.current.onend = () => {
-        setIsListening(false);
-      };
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      console.warn('Speech recognition not supported in this browser');
+      return;
     }
-  }, []);
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onresult = (event) => {
+      let finalTranscript = '';
+      let interimTranscript = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (result.isFinal) {
+          finalTranscript += result[0].transcript;
+        } else {
+          interimTranscript += result[0].transcript;
+        }
+      }
+
+      // Show interim results in input for live feedback
+      setInput(interimTranscript || finalTranscript);
+
+      if (finalTranscript) {
+        // Use the ref to call the latest handleSend function
+        handleSendRef.current(finalTranscript);
+      }
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      if (event.error === 'not-allowed') {
+        alert('Microphone access was denied. Please allow microphone access in your browser settings and try again.');
+      } else if (event.error === 'no-speech') {
+        console.log('No speech detected, try again');
+      }
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      // If we're still supposed to be listening (continuous mode), restart
+      if (isListeningRef.current) {
+        try {
+          recognition.start();
+        } catch (e) {
+          console.warn('Failed to restart recognition:', e);
+          setIsListening(false);
+        }
+      } else {
+        setIsListening(false);
+      }
+    };
+
+    recognitionRef.current = recognition;
+
+    return () => {
+      try {
+        recognition.stop();
+      } catch (e) {
+        // ignore
+      }
+    };
+  }, []); // Only run once - refs handle dynamic updates
+
+  // Ref to track isListening for the onend callback
+  const isListeningRef = useRef(false);
+  useEffect(() => {
+    isListeningRef.current = isListening;
+  }, [isListening]);
 
   // Simulate audio level for visual effect
   useEffect(() => {
