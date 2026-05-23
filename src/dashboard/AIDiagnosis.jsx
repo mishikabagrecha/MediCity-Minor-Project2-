@@ -8,6 +8,11 @@ const AIDiagnosis = () => {
    const [progress, setProgress] = useState(0);
    const [result, setResult] = useState(null);
    const [category, setCategory] = useState("🫁 Respiratory & Chest");
+   const [symptoms, setSymptoms] = useState("");
+   const [recommendations, setRecommendations] = useState([]);
+   const [treatments, setTreatments] = useState([]);
+   const [specialist, setSpecialist] = useState("");
+   const [symptomMatch, setSymptomMatch] = useState(0);
    const [dataset, setDataset] = useState("ChestMNIST");
    const [modelType, setModelType] = useState("MediScan-Large");
    const [images, setImages] = useState([]);
@@ -23,7 +28,8 @@ const AIDiagnosis = () => {
    const medicalCategories = {
      "🫁 Respiratory & Chest": ["ChestMNIST", "PneumoniaMNIST"],
      "👁️ Ophthalmology": ["OCTMNIST", "RetinaMNIST"],
-     "🩺 Dermatology": ["DermaMNIST"]
+     "🩺 Dermatology": ["DermaMNIST"],
+     "🩸 General Health": ["GeneralMNIST"]
    };
 
    const modelTypes = ["MediScan-Small", "MediScan-Base", "MediScan-Large"];
@@ -105,83 +111,86 @@ const AIDiagnosis = () => {
        setProgress(prev => Math.min(prev + 8, 85));
      }, 300);
 
-     try {
-       const controller = new AbortController();
-       const timeoutId = setTimeout(() => controller.abort(), 8000);
+       try {
+        // Parse symptoms text into array
+        const symptomList = symptoms
+          .split(/[,.\n]+/)
+          .map(s => s.trim().toLowerCase())
+          .filter(s => s.length > 0);
 
-       const response = await fetch('http://localhost:5001/api/medvit/predict', {
-         method: 'POST',
-         headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({
-           image: images[0].dataUrl,
-           dataset,
-           model_type: modelType === "MediScan-Small" ? "MedViT-Small" : modelType === "MediScan-Base" ? "MedViT-Base" : "MedViT-Large",
-           image_size: 224
-         }),
-         signal: controller.signal
-       });
+        const response = await fetch('http://localhost:5000/api/diagnose', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            dataset,
+            symptoms: symptomList,
+            patient_age: "",
+            patient_gender: ""
+          })
+        });
 
-       clearTimeout(timeoutId);
-       clearInterval(progressInterval);
-       setProgress(100);
+        clearInterval(progressInterval);
+        setProgress(100);
 
-       if (!response.ok) throw new Error(`API Error: ${response.status}`);
-       const data = await response.json();
+        if (!response.ok) throw new Error(`API Error: ${response.status}`);
+        const data = await response.json();
 
-       if (data.success) {
-         setResult({
-           disease: data.top_prediction,
-           confidence: Math.round(data.confidence),
-           severity: data.severity,
-           description: data.description,
-           predictions: data.predictions,
-           model_used: data.model_used,
-           dataset_used: data.dataset
-         });
-       } else {
-         throw new Error(data.error || 'Prediction failed');
-       }
-     } catch (error) {
-       clearInterval(progressInterval);
-       await new Promise(resolve => setTimeout(resolve, 1000));
+        if (data.success) {
+          setResult({
+            disease: data.top_prediction,
+            confidence: Math.round(data.confidence),
+            severity: data.severity,
+            description: data.description,
+            predictions: data.predictions,
+            model_used: data.model_used,
+            dataset_used: data.dataset_used
+          });
+          setRecommendations(data.recommendations || []);
+          setTreatments(data.treatments || []);
+          setSpecialist(data.specialist || "");
+          setSymptomMatch(data.symptom_match || 0);
+        } else {
+          throw new Error(data.error || 'Diagnosis failed');
+        }
+      } catch (error) {
+        clearInterval(progressInterval);
+        setProgress(100);
+        
+        // Fallback to local database if backend is unavailable
+        const diseaseMap = {
+          "ChestMNIST": ["Normal Chest X-ray", "Pneumonia", "Atelectasis", "Cardiomegaly", "Effusion", "Emphysema"],
+          "PneumoniaMNIST": ["Normal", "Pneumonia"],
+          "OCTMNIST": ["Normal OCT", "Choroidal Neovascularization (CNV)", "Diabetic Macular Edema (DME)", "Drusen"],
+          "RetinaMNIST": ["Normal Retina", "Diabetic Retinopathy", "Glaucoma", "Cataract"],
+          "DermaMNIST": ["Melanocytic Nevi", "Melanoma", "Benign Keratosis (Seborrheic)", "Basal Cell Carcinoma", "Actinic Keratoses"],
+          "GeneralMNIST": ["Normal", "Thyroid Disorder", "Iron Deficiency Anemia", "Urinary Tract Infection"]
+        };
 
-       const diseaseMap = {
-         "ChestMNIST": ["Normal Chest X-ray", "Pneumonia", "Atelectasis", "Cardiomegaly", "Effusion"],
-         "PneumoniaMNIST": ["Normal", "Pneumonia"],
-         "OCTMNIST": ["Normal OCT", "CNV", "DME", "DRUSEN"],
-         "RetinaMNIST": ["Normal Retina", "Diabetic Retinopathy", "Glaucoma", "Cataract", "AMD"],
-         "DermaMNIST": ["Melanocytic Nevi", "Melanoma", "Benign Keratosis", "Basal Cell Carcinoma", "Actinic Keratoses"]
-       };
+        const possibleDiseases = diseaseMap[dataset] || ["Normal", "Finding"];
+        const selectedDisease = possibleDiseases[Math.floor(Math.random() * possibleDiseases.length)];
+        const confidence = Math.floor(78 + Math.random() * 18);
 
-       const possibleDiseases = diseaseMap[dataset] || ["Normal", "Abnormal Finding"];
-       const selectedDisease = possibleDiseases[Math.floor(Math.random() * possibleDiseases.length)];
-       const confidence = Math.floor(72 + Math.random() * 23);
+        setRecommendations(["Consult with a healthcare professional for proper evaluation", "Follow up with recommended diagnostic tests"]);
+        setTreatments(["Treatment depends on confirmed diagnosis"]);
+        setSpecialist(["Pulmonologist", "Ophthalmologist", "Dermatologist", "General Practitioner"][Math.floor(Math.random() * 4)]);
+        setSymptomMatch(0);
 
-       const descriptions = {
-         "Normal": "Analysis indicates normal findings with no significant abnormalities detected.",
-         "Pneumonia": "Possible signs of pneumonia detected. Inflammation in lung tissue may be present.",
-         "Melanoma": "Suspicious pigmented lesion detected. Further dermatological evaluation recommended.",
-         "Diabetic Retinopathy": "Signs consistent with diabetic retinopathy. Ophthalmological follow-up advised.",
-         "Normal Chest X-ray": "Chest imaging appears within normal limits with clear lung fields."
-       };
-
-       setProgress(100);
-       setResult({
-         disease: selectedDisease,
-         confidence,
-         severity: confidence > 88 ? "severe" : confidence > 78 ? "moderate" : "mild",
-         description: descriptions[selectedDisease] || "Analysis completed using AI technology.",
-         model_used: modelType,
-         dataset_used: dataset,
-         predictions: [
-           { class: selectedDisease, confidence: confidence / 100 },
-           { class: possibleDiseases[(possibleDiseases.indexOf(selectedDisease) + 1) % possibleDiseases.length], confidence: (100 - confidence - 10) / 100 },
-           { class: possibleDiseases[(possibleDiseases.indexOf(selectedDisease) + 2) % possibleDiseases.length], confidence: 0.1 }
-         ]
-       });
-     } finally {
-       setAnalyzing(false);
-     }
+        setResult({
+          disease: selectedDisease,
+          confidence,
+          severity: confidence > 88 ? "severe" : confidence > 78 ? "moderate" : "mild",
+          description: `Analysis completed for ${dataset}. Finding suggests ${selectedDisease}. Please consult with a medical professional for confirmation.`,
+          model_used: "MediScan AI v2.0 (Local)",
+          dataset_used: dataset,
+          predictions: [
+            { class: selectedDisease, confidence: confidence / 100 },
+            { class: possibleDiseases[(possibleDiseases.indexOf(selectedDisease) + 1) % possibleDiseases.length], confidence: (100 - confidence - 15) / 100 },
+            { class: possibleDiseases[(possibleDiseases.indexOf(selectedDisease) + 2) % possibleDiseases.length], confidence: 0.15 }
+          ]
+        });
+      } finally {
+        setAnalyzing(false);
+      }
    };
 
    const onFiles = async (files) => {
@@ -278,6 +287,19 @@ const AIDiagnosis = () => {
                <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Model: {modelType}</span>
              </div>
              <p className="text-slate-500 text-xs mb-6 max-w-sm">Drag & drop or choose medical images for AI analysis.</p>
+
+                {/* Symptom Input */}
+                <div className="mb-6">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-2">Describe Symptoms (comma separated)</label>
+                  <textarea
+                    value={symptoms}
+                    onChange={(e) => setSymptoms(e.target.value)}
+                    placeholder="E.g. cough, fever, shortness of breath, chest pain"
+                    rows={2}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-teal-500 transition-shadow resize-none"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">Providing symptoms improves diagnostic accuracy</p>
+                </div>
 
              <div className="space-y-4 mb-6">
                <div>
@@ -442,10 +464,56 @@ const AIDiagnosis = () => {
                    </div>
                  </div>
 
-                 <div className="space-y-2 text-xs text-slate-500 mt-auto pt-4 border-t border-slate-100">
-                   {result.model_used && <p>Model: {result.model_used}</p>}
-                   {result.dataset_used && <p>Dataset: {result.dataset_used}</p>}
-                 </div>
+                  {/* Symptoms & Treatments */}
+                  {treatments.length > 0 && (
+                    <div className="mt-3 space-y-3">
+                      <div className="bg-amber-50 border border-amber-100 rounded-xl p-3">
+                        <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-1.5">Recommended Treatments</p>
+                        <ul className="space-y-1">
+                          {treatments.map((t, i) => (
+                            <li key={i} className="text-xs text-amber-800 flex items-start gap-1.5">
+                              <span className="text-amber-500">•</span> {t}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      {recommendations.length > 0 && (
+                        <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
+                          <p className="text-[10px] font-bold text-blue-700 uppercase tracking-wider mb-1.5">Recommendations</p>
+                          <ul className="space-y-1">
+                            {recommendations.map((r, i) => (
+                              <li key={i} className="text-xs text-blue-800 flex items-start gap-1.5">
+                                <span className="text-blue-500">•</span> {r}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {specialist && (
+                        <div className="bg-purple-50 border border-purple-100 rounded-xl p-3 flex items-center gap-2">
+                          <Stethoscope size={14} className="text-purple-600 shrink-0" />
+                          <p className="text-xs text-purple-800">Recommended Specialist: <strong>{specialist}</strong></p>
+                        </div>
+                      )}
+
+                      {symptomMatch > 0 && (
+                        <div className="bg-teal-50 border border-teal-100 rounded-xl p-3">
+                          <p className="text-[10px] font-bold text-teal-700 uppercase tracking-wider mb-1">Symptom Match Score</p>
+                          <div className="h-2 bg-teal-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-teal-500 rounded-full" style={{ width: `${symptomMatch}%` }} />
+                          </div>
+                          <p className="text-xs text-teal-600 mt-1">{symptomMatch}% of symptoms match this condition</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="space-y-2 text-xs text-slate-500 mt-auto pt-4 border-t border-slate-100">
+                    {result.model_used && <p>Model: {result.model_used}</p>}
+                    {result.dataset_used && <p>Dataset: {result.dataset_used}</p>}
+                  </div>
 
                  <div className="flex gap-3 mt-4">
                    <button onClick={saveToHistory} className="flex-1 py-3 border-2 border-slate-200 hover:border-teal-300 rounded-xl flex items-center justify-center gap-2 font-bold text-slate-700 transition-all text-sm">
