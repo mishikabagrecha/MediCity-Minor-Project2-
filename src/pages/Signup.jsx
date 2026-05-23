@@ -7,6 +7,7 @@ const DISEASES_OPTIONS = ['Dengue', 'Jaundice', 'Tuberculosis', 'Malaria', 'Asth
 const CHRONIC_OPTIONS = ['Diabetes', 'Hypertension', 'Arthritis', 'Thyroid Disorder', 'Heart Disease', 'Asthma', 'Migraine', 'PCOS', 'Kidney Disease', 'Other'];
 const RELATIONSHIPS = ['Father', 'Mother', 'Brother', 'Sister', 'Grandfather', 'Grandmother', 'Other'];
 const CATEGORIES = ['General', 'OBC', 'SC', 'ST', 'EWS', 'Veteran (CGHS bound)'];
+const INDIAN_STATES = ['Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Andaman and Nicobar Islands', 'Chandigarh', 'Dadra and Nagar Haveli and Daman and Diu', 'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry'];
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -408,7 +409,10 @@ const Signup = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-slate-500 uppercase tracking-wide mb-1">State / UT</label>
-                    <input name="state_province" value={formData.state_province} onChange={handleChange} required type="text" className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 focus:ring-2 focus:ring-teal-500 focus:border-teal-500" placeholder="State name" />
+                    <select name="state_province" value={formData.state_province} onChange={handleChange} required className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                      <option value="">Select State / UT</option>
+                      {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
                   </div>
                 </div>
               </div>
@@ -419,7 +423,7 @@ const Signup = () => {
                 <h3 className="text-xl font-bold border-b pb-2 mb-4 text-slate-700">Final Step: Account Setup</h3>
                 <div>
                   <label className="block text-sm font-bold text-slate-500 uppercase tracking-wide mb-1">Email Address</label>
-                  <input name="email" value={formData.email} onChange={handleChange} required type="email" className={`w-full border bg-slate-50 rounded-xl p-3 focus:ring-2 focus:ring-teal-500 ${errors.email ? 'border-rose-300 bg-rose-50' : 'border-slate-200'}`} placeholder="you@example.com" />
+                  <input name="email" value={formData.email} onChange={handleChange} required type="email" className={`w-full border bg-slate-50 rounded-xl p-3 focus:ring-2 focus:ring-teal-500 ${errors.email ? 'border-rose-300 bg-rose-50' : 'border-slate-200'}`} placeholder="Enter your email" />
                   <ErrMsg field="email" />
                 </div>
                 <div>
