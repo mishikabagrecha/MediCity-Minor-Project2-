@@ -97,7 +97,7 @@ const Signup = () => {
         </div>
 
         {/* Improved Top Progress Layout */}
-        <div className="mb-10 overflow-x-auto pb-4">
+        <div className="mb-10 pb-4">
           <div className="flex justify-between items-center relative min-w-[600px] px-4">
             <div className="absolute top-1/2 left-0 right-0 h-1 bg-slate-100 -translate-y-1/2 z-0 mx-6" />
             <div className="absolute top-1/2 left-0 h-1 bg-teal-500 -translate-y-1/2 z-0 transition-all duration-500 mx-6" style={{ width: `${((step - 1) / 6) * 100}%` }} />
