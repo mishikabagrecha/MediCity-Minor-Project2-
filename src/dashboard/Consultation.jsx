@@ -14,6 +14,8 @@ const Consultation = () => {
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [category, setCategory] = useState("All");
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [meetingLink, setMeetingLink] = useState('');
+  const [meetingMotive, setMeetingMotive] = useState('');
   
   const reportRef = useRef(null);
 
@@ -42,8 +44,20 @@ const Consultation = () => {
 
   const confirmBooking = (e) => {
     e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = {
+      doctor: selectedDoctor?.name,
+      spec: selectedDoctor?.spec,
+      slot: formData.get('slot') || '12:00 PM',
+      name: formData.get('name'),
+      email: formData.get('email'),
+      meetLink: formData.get('meetLink'),
+      motive: formData.get('motive'),
+    };
     setShowBookingModal(false);
-    alert("Appointment confirmed! A confirmation has been sent to your email.");
+    setMeetingLink('');
+    setMeetingMotive('');
+    alert(`Appointment confirmed with ${data.doctor}!\n\n📅 Slot: ${data.slot}\n🔗 Google Meet: ${data.meetLink || 'TBD'}\n📝 Motive: ${data.motive || 'Not specified'}\n\nA confirmation has been sent to ${data.email}.`);
   };
 
   const downloadPDF = async () => {
@@ -302,19 +316,46 @@ const Consultation = () => {
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Select Slot</label>
                   <div className="grid grid-cols-3 gap-2">
                     {['10:00 AM', '12:00 PM', '04:30 PM'].map((slot, i) => (
-                      <button key={slot} type="button" className={`py-2 text-sm font-bold rounded-lg border transition-all ${i === 1 ? 'bg-teal-600 text-white border-teal-600 shadow-md' : 'bg-white border-slate-200 text-slate-600 hover:border-teal-500'}`}>
+                      <label key={slot} className={`py-2 text-sm font-bold rounded-lg border transition-all cursor-pointer text-center ${i === 1 ? 'bg-teal-600 text-white border-teal-600 shadow-md' : 'bg-white border-slate-200 text-slate-600 hover:border-teal-500'}`}>
+                        <input type="radio" name="slot" value={slot} defaultChecked={i === 1} className="sr-only" />
                         {slot}
-                      </button>
+                      </label>
                     ))}
                   </div>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Your Name</label>
-                  <input required type="text" defaultValue="Patient Name" className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 font-medium text-sm" />
+                  <input required type="text" name="name" defaultValue="Patient Name" className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 font-medium text-sm" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Email</label>
-                  <input required type="email" defaultValue="patient@example.com" className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 font-medium text-sm" />
+                  <input required type="email" name="email" defaultValue="patient@example.com" className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 font-medium text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    <Video size={14} className="inline mr-1" /> Google Meet Link
+                  </label>
+                  <input
+                    type="url"
+                    name="meetLink"
+                    value={meetingLink}
+                    onChange={(e) => setMeetingLink(e.target.value)}
+                    placeholder="https://meet.google.com/xxx-xxxx-xxx"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 font-medium text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    <FileText size={14} className="inline mr-1" /> Motive of Meeting
+                  </label>
+                  <textarea
+                    name="motive"
+                    value={meetingMotive}
+                    onChange={(e) => setMeetingMotive(e.target.value)}
+                    placeholder="Briefly describe your symptoms or reason for consultation..."
+                    rows={3}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 font-medium text-sm resize-none"
+                  />
                 </div>
                 <button type="submit" className="w-full bg-teal-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-teal-600/30 hover:bg-teal-700 transition-colors mt-2">
                   Confirm Appointment
