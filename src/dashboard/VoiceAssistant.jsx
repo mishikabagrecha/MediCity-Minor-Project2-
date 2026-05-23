@@ -1,7 +1,4 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
-import { VoiceOrb } from './components/VoiceOrb';
 import { MessageSquare, HelpCircle, Lightbulb, Play, MoreHorizontal, Mic, MicOff, FileText, Send, Zap, Bot, X, Volume2, VolumeX, Loader2, AlertCircle } from 'lucide-react';
 
 const VoiceAssistant = () => {
@@ -338,23 +335,61 @@ const VoiceAssistant = () => {
           </div>
         </div>
 
-        {/* Glowing Orb Canvas */}
-        <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-3xl p-6 relative flex flex-col items-center justify-center border border-slate-200 h-64 overflow-hidden border-t-4 border-t-teal-500">
-          <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-white/80 backdrop-blur px-3 py-1.5 rounded-full shadow-sm z-20">
+        {/* Glowing Orb - CSS Animated (no Three.js to prevent black screen) */}
+        <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl p-6 relative flex flex-col items-center justify-center border border-slate-700 h-64 overflow-hidden border-t-4 border-t-teal-500">
+          <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-black/40 backdrop-blur px-3 py-1.5 rounded-full shadow-sm z-20">
             <span className={`w-2 h-2 rounded-full ${isListening ? 'bg-rose-500 animate-pulse' : 'bg-teal-500'} `}></span>
-            <span className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
+            <span className="text-[10px] font-bold text-white uppercase tracking-wider">
               {isListening ? 'Live' : vapiStatus === 'ready' ? 'Ready' : 'Init'}
             </span>
           </div>
           
-          <div className="absolute inset-0 z-10 w-full h-full scale-[1.5]">
-            <Canvas camera={{ position: [0, 0, 5], fov: 45 }}>
-              <ambientLight intensity={1} />
-              <directionalLight position={[5, 5, 5]} intensity={2} color="#ffffff" />
-              <pointLight position={[-5, -5, -5]} intensity={1} color="#14b8a6" />
-              <VoiceOrb />
-              <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={2} />
-            </Canvas>
+          {/* CSS Animated Voice Orb */}
+          <div className="relative z-10 flex items-center justify-center">
+            {/* Outer glow ring */}
+            <div className={`absolute w-48 h-48 rounded-full transition-all duration-1000 ${
+              isListening 
+                ? 'bg-rose-500/20 shadow-[0_0_80px_30px_rgba(244,63,94,0.3)]' 
+                : 'bg-teal-500/20 shadow-[0_0_80px_30px_rgba(20,184,166,0.3)]'
+            }`}></div>
+            
+            {/* Mid ring */}
+            <div className={`absolute w-36 h-36 rounded-full transition-all duration-700 ${
+              isListening
+                ? 'bg-rose-400/30 animate-pulse'
+                : 'bg-teal-400/30'
+            }`}></div>
+            
+            {/* Core orb */}
+            <div className={`w-24 h-24 rounded-full flex items-center justify-center transition-all duration-500 ${
+              isListening
+                ? 'bg-gradient-to-br from-rose-400 to-rose-600 shadow-[0_0_60px_20px_rgba(244,63,94,0.4)] animate-pulse'
+                : 'bg-gradient-to-br from-teal-400 to-blue-600 shadow-[0_0_60px_20px_rgba(20,184,166,0.4)]'
+            }`}>
+              <div className="w-14 h-14 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center">
+                {isListening ? (
+                  <Mic size={28} className="text-white animate-pulse" />
+                ) : (
+                  <Mic size={28} className="text-white/80" />
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {/* Ambient particles */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {[...Array(6)].map((_, i) => (
+              <div
+                key={i}
+                className={`absolute w-1 h-1 rounded-full ${isListening ? 'bg-rose-400/50' : 'bg-teal-400/50'} animate-ping`}
+                style={{
+                  left: `${15 + i * 14}%`,
+                  top: `${20 + (i % 3) * 30}%`,
+                  animationDelay: `${i * 0.4}s`,
+                  animationDuration: `${2 + i * 0.5}s`,
+                }}
+              />
+            ))}
           </div>
         </div>
 
