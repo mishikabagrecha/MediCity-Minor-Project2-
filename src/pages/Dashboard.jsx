@@ -1,12 +1,45 @@
 import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { Menu, Bell, User } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 
+const pageTitles = {
+  '/dashboard': 'Dashboard Overview',
+  '/dashboard/vault': 'Medical Vault',
+  '/dashboard/ai-diagnosis': 'AI Diagnosis',
+  '/dashboard/emergency': 'Emergency Services',
+  '/dashboard/schemes': 'Government Schemes',
+  '/dashboard/vaccination': 'Vaccination Records',
+  '/dashboard/consultation': 'Consultation',
+  '/dashboard/blood-finder': 'Blood Finder',
+  '/dashboard/exercise': 'Exercise Tracking',
+  '/dashboard/voice': 'Voice Assistant',
+  '/dashboard/heatmap': 'Health Heatmap',
+  '/dashboard/profile': 'My Profile',
+};
+
 const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user } = useUser();
+  const location = useLocation();
+  const currentTitle = pageTitles[location.pathname] || 'Dashboard';
+
+  // Dynamic subtitle based on route
+  const pageSubtitles = {
+    '/dashboard': 'Your health at a glance',
+    '/dashboard/vault': 'Your medical records',
+    '/dashboard/ai-diagnosis': 'AI-powered health analysis',
+    '/dashboard/emergency': 'Emergency contacts & ambulance',
+    '/dashboard/schemes': 'Check your eligibility',
+    '/dashboard/vaccination': 'Track your immunizations',
+    '/dashboard/consultation': 'Book & join video calls',
+    '/dashboard/blood-finder': 'Find blood donors near you',
+    '/dashboard/exercise': 'Track your fitness journey',
+    '/dashboard/voice': 'Talk to MediCity AI',
+    '/dashboard/heatmap': 'Health trends visualization',
+    '/dashboard/profile': 'Manage your profile',
+  };
 
   return (
     <div className="flex h-screen bg-slate-50">
@@ -33,7 +66,10 @@ const Dashboard = () => {
             >
               <Menu size={24} />
             </button>
-            <h1 className="text-lg font-semibold text-slate-800 hidden sm:block">Dashboard Overview</h1>
+            <div className="hidden sm:block">
+              <h1 className="text-lg font-semibold text-slate-800">{currentTitle}</h1>
+              <p className="text-xs text-slate-400 font-medium">{pageSubtitles[location.pathname] || ''}</p>
+            </div>
           </div>
           
           <div className="flex items-center space-x-4">
@@ -45,9 +81,9 @@ const Dashboard = () => {
             <div className="flex items-center gap-3 border-l border-slate-200 pl-4">
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-medium text-slate-700">{user?.name || 'Guest User'}</p>
-                <p className="text-xs text-slate-500">Patient Profile</p>
+                <p className="text-xs text-slate-500">{user?.age ? `${user.age} yrs • ` : ''}Patient Profile</p>
               </div>
-              <div className="w-9 h-9 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold border border-teal-200">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-teal-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
                 {user?.name ? user.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase() : 'GU'}
               </div>
             </div>
