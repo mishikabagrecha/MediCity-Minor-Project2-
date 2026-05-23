@@ -38,7 +38,7 @@ const Sidebar = ({ isOpen, setisOpen }) => {
   ];
 
   return (
-    <div className={`fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 transform transition-transform duration-300 ease-in-out md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col h-screen`}>
+    <div className={`fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 transform transition-transform duration-300 ease-in-out md:translate-x-0 ${isOpen ? 'translate-x-0' : 'max-md:-translate-x-full'} flex flex-col h-screen`}>
       <div className="flex h-16 items-center px-6 border-b border-slate-200 shrink-0">
         <NavLink to="/" className="flex items-center gap-2">
           <div className="bg-gradient-to-r from-teal-500 to-blue-600 p-1.5 rounded-lg text-white">
