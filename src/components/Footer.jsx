@@ -18,13 +18,13 @@ const Footer = () => {
               Healthcare Access for Everyone, Everywhere. Empowering communities with equitable health digital services.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-slate-400 hover:text-teal-600 transition-colors">
+              <a href="mailto:support@medicityindia.in" className="text-slate-400 hover:text-teal-600 transition-colors" title="Email">
                 <Mail size={20} />
               </a>
-              <a href="#" className="text-slate-400 hover:text-teal-600 transition-colors">
+              <a href="tel:+9118001234567" className="text-slate-400 hover:text-teal-600 transition-colors" title="Call 1800-123-4567">
                 <Phone size={20} />
               </a>
-              <a href="#" className="text-slate-400 hover:text-teal-600 transition-colors">
+              <a href="https://maps.google.com/?q=Indore+India" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-teal-600 transition-colors" title="Headquarters">
                 <MapPin size={20} />
               </a>
             </div>
@@ -36,7 +36,7 @@ const Footer = () => {
               <li><Link to="/about" className="hover:text-teal-600 transition-colors">About Us</Link></li>
               <li><Link to="/pricing" className="hover:text-teal-600 transition-colors">Pricing</Link></li>
               <li><Link to="/faq" className="hover:text-teal-600 transition-colors">FAQ</Link></li>
-              <li><a href="#" className="hover:text-teal-600 transition-colors">Careers</a></li>
+              <li><a href="https://www.linkedin.com" target="_blank" rel="noopener noreferrer" className="hover:text-teal-600 transition-colors">Careers</a></li>
             </ul>
           </div>
           

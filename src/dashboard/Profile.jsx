@@ -1,10 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '../context/UserContext';
-import { HeartPulse, Activity, Bookmark, MapPin, Pill, ActivitySquare, AlertCircle, Phone, User, Calendar, Weight, Ruler, Heart, Upload, Download, QrCode } from 'lucide-react';
+import { HeartPulse, Activity, Bookmark, MapPin, Pill, ActivitySquare, AlertCircle, Phone, User, Calendar, Weight, Ruler, Heart, Upload, Download, QrCode, Stethoscope, Hospital } from 'lucide-react';
 
 const Profile = () => {
   const { user, updateProfile, contacts } = useUser();
   
+  const getHospitalName = () => {
+    if (!user?.preferred_hospital) return '';
+    if (typeof user.preferred_hospital === 'string') return user.preferred_hospital;
+    return user.preferred_hospital.name || '';
+  };
+
   const defaultProfile = {
     name: user?.name || '',
     age: user?.age || '',
@@ -14,8 +20,6 @@ const Profile = () => {
     blood_group: user?.vitals?.blood_group || '',
     weight: user?.vitals?.weight || '',
     height: user?.vitals?.height || '',
-    blood_pressure: user?.vitals?.blood_pressure || '',
-    heart_rate: user?.vitals?.heart_rate || '',
     past_diseases: user?.medical_history?.past_diseases || '',
     chronic_conditions: user?.medical_history?.chronic_conditions || '',
     family_history: user?.medical_history?.family_history || '',
@@ -30,6 +34,13 @@ const Profile = () => {
     exerciseFrequency: '3 times per week',
     dietPreference: 'Vegetarian',
     sleepPattern: '7 hours per night',
+    preferred_hospital_name: getHospitalName(),
+    preferred_hospital_city: user?.preferred_hospital?.city || '',
+    preferred_hospital_phone: user?.preferred_hospital?.phone || '',
+    family_doctor_name: user?.family_doctor?.name || '',
+    family_doctor_specialization: user?.family_doctor?.specialization || '',
+    family_doctor_phone: user?.family_doctor?.phone || '',
+    family_doctor_clinic: user?.family_doctor?.clinic || '',
   };
 
   const [formData, setFormData] = useState(defaultProfile);
@@ -51,8 +62,6 @@ const Profile = () => {
         blood_group: formData.blood_group,
         weight: parseFloat(formData.weight),
         height: parseFloat(formData.height),
-        blood_pressure: formData.blood_pressure,
-        heart_rate: parseInt(formData.heart_rate),
       },
       medical_history: {
         past_diseases: formData.past_diseases,
@@ -62,6 +71,17 @@ const Profile = () => {
       },
       medications: formData.medications,
       allergies: formData.allergies,
+      preferred_hospital: {
+        name: formData.preferred_hospital_name,
+        city: formData.preferred_hospital_city,
+        phone: formData.preferred_hospital_phone
+      },
+      family_doctor: {
+        name: formData.family_doctor_name,
+        specialization: formData.family_doctor_specialization,
+        phone: formData.family_doctor_phone,
+        clinic: formData.family_doctor_clinic
+      },
       scheme_data: {
         income: formData.income,
         category: formData.category,
@@ -79,6 +99,13 @@ const Profile = () => {
     return '';
   };
 
+  // Parse family history into structured rows for display
+  const familyHistoryRows = formData.family_history ? formData.family_history.split('; ').filter(Boolean).map(entry => {
+    const match = entry.match(/^(.+?)\s\((.+?)\):\s(.+)$/);
+    if (match) return { name: match[1], relationship: match[2], disease: match[3] };
+    return null;
+  }).filter(Boolean) : [];
+
   const SectionHeader = ({ icon: Icon, title, color = 'teal' }) => (
     <div className="flex items-center gap-2 mb-4 pb-2 border-b border-slate-100">
       <div className={`w-8 h-8 rounded-full bg-${color}-50 flex items-center justify-center`}>
@@ -88,7 +115,7 @@ const Profile = () => {
     </div>
   );
 
-  const InfoField = ({ label, value, editing, name, type = 'text', children }) => (
+  const InfoField = ({ label, value, editing, name, type = 'text', children, onChange }) => (
     <div>
       <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1">{label}</label>
       {editing ? (
@@ -104,6 +131,8 @@ const Profile = () => {
       )}
     </div>
   );
+
+  const categories = ['General', 'OBC', 'SC', 'ST', 'EWS', 'Veteran (CGHS bound)'];
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-in slide-in-from-bottom">
@@ -151,7 +180,7 @@ const Profile = () => {
 
       {activeTab === 'view' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Personal Diagnostics */}
+          {/* Personal Info */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <SectionHeader icon={HeartPulse} title="Personal Info" />
             <div className="space-y-3">
@@ -162,7 +191,7 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* Vitals */}
+          {/* Vitals (BP and HR removed) */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <SectionHeader icon={Activity} title="Current Vitals" />
             <div className="grid grid-cols-2 gap-4">
@@ -171,16 +200,12 @@ const Profile = () => {
                 <p className="font-black text-rose-600 text-2xl">{formData.blood_group || '--'}</p>
               </div>
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">BP</p>
-                <p className="font-bold text-slate-800 text-xl">{formData.blood_pressure || '--'} <span className="text-sm text-slate-500">mmHg</span></p>
-              </div>
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Weight / Height</p>
                 <p className="font-bold text-slate-800 text-lg">{formData.weight}kg / {formData.height}cm</p>
               </div>
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Heart Rate</p>
-                <p className="font-bold text-slate-800 text-xl">{formData.heart_rate || '--'} <span className="text-sm text-slate-500">bpm</span></p>
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 col-span-2">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">BMI</p>
+                <p className="font-bold text-slate-800 text-xl">{calculateBMI() || '--'}</p>
               </div>
             </div>
           </div>
@@ -209,14 +234,54 @@ const Profile = () => {
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Chronic Conditions</p>
                 <p className="text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-100 min-h-[50px]">{formData.chronic_conditions || 'Nil'}</p>
               </div>
-              <div>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Family History</p>
-                <p className="text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-100 min-h-[50px]">{formData.family_history || 'Nil'}</p>
+              <div className="md:col-span-2">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Family Medical History</p>
+                {familyHistoryRows.length > 0 ? (
+                  <div className="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-slate-100 text-xs text-slate-500 uppercase tracking-wider">
+                        <tr><th className="p-3 text-left">Name</th><th className="p-3 text-left">Relationship</th><th className="p-3 text-left">Condition</th></tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        {familyHistoryRows.map((row, i) => (
+                          <tr key={i} className="hover:bg-white">
+                            <td className="p-3 font-medium text-slate-800">{row.name}</td>
+                            <td className="p-3 text-slate-600">{row.relationship}</td>
+                            <td className="p-3 text-slate-600">{row.disease}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-slate-500 bg-slate-50 p-3 rounded-lg border border-slate-100">{formData.family_history || 'No family history recorded'}</p>
+                )}
               </div>
               <div>
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Surgeries</p>
                 <p className="text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-100 min-h-[50px]">{formData.surgeries || 'Nil'}</p>
               </div>
+            </div>
+          </div>
+
+          {/* Preferred Hospital */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <SectionHeader icon={MapPin} title="Preferred Hospital" color="blue" />
+            <div className="space-y-2">
+              <div><p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-0.5">Hospital</p><p className="font-medium text-slate-800">{formData.preferred_hospital_name || 'Not specified'}</p></div>
+              <div><p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-0.5">City</p><p className="font-medium text-slate-800">{formData.preferred_hospital_city || '--'}</p></div>
+              <div><p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-0.5">Emergency Contact</p><p className="font-medium text-slate-800">{formData.preferred_hospital_phone || '--'}</p></div>
+            </div>
+          </div>
+
+          {/* Family Doctor */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <SectionHeader icon={Stethoscope} title="Family Doctor" color="purple" />
+            <div className="space-y-2">
+              <div><p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-0.5">Name</p><p className="font-medium text-slate-800">{formData.family_doctor_name || 'Not specified'}</p></div>
+              <div><p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-0.5">Specialization</p><p className="font-medium text-slate-800">{formData.family_doctor_specialization || '--'}</p></div>
+              <div><p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-0.5">Phone</p><p className="font-medium text-slate-800">{formData.family_doctor_phone || '--'}</p></div>
+              <div><p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-0.5">Clinic</p><p className="font-medium text-slate-800">{formData.family_doctor_clinic || '--'}</p></div>
             </div>
           </div>
 
@@ -247,7 +312,7 @@ const Profile = () => {
                     <p className="text-teal-400 font-mono text-xs mt-1 flex items-center gap-1"><Phone size={12} /> {c.phone}</p>
                   </div>
                 )) : (
-                  <p className="text-slate-400 text-sm">No emergency contacts saved. Add them in the Emergency section.</p>
+                  <p className="text-slate-400 text-sm">No emergency contacts saved.</p>
                 )}
               </div>
             </div>
@@ -289,6 +354,10 @@ const Profile = () => {
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1">Chronic Conditions</label>
                 <textarea name="chronic_conditions" value={formData.chronic_conditions} onChange={handleChange} className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-teal-500" rows="2" />
               </div>
+              <div>
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1">Family History</label>
+                <textarea name="family_history" value={formData.family_history} onChange={handleChange} className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-teal-500" rows="2" />
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1">Medications</label>
@@ -298,6 +367,75 @@ const Profile = () => {
                   <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1">Allergies</label>
                   <textarea name="allergies" value={formData.allergies} onChange={handleChange} className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-teal-500" rows="2" />
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Preferred Hospital (Edit) */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <SectionHeader icon={MapPin} title="Preferred Hospital" color="blue" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1">Hospital Name</label>
+                <input name="preferred_hospital_name" value={formData.preferred_hospital_name} onChange={handleChange} className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-teal-500" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1">City</label>
+                <input name="preferred_hospital_city" value={formData.preferred_hospital_city} onChange={handleChange} className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-teal-500" />
+              </div>
+              <div className="md:col-span-2">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1">Emergency Contact</label>
+                <input name="preferred_hospital_phone" value={formData.preferred_hospital_phone} onChange={handleChange} className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-teal-500" />
+              </div>
+            </div>
+          </div>
+
+          {/* Family Doctor (Edit) */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <SectionHeader icon={Stethoscope} title="Family Doctor" color="purple" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1">Doctor Name</label>
+                <input name="family_doctor_name" value={formData.family_doctor_name} onChange={handleChange} className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-teal-500" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1">Specialization</label>
+                <input name="family_doctor_specialization" value={formData.family_doctor_specialization} onChange={handleChange} className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-teal-500" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1">Contact Number</label>
+                <input name="family_doctor_phone" value={formData.family_doctor_phone} onChange={handleChange} className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-teal-500" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1">Clinic / Hospital</label>
+                <input name="family_doctor_clinic" value={formData.family_doctor_clinic} onChange={handleChange} className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-teal-500" />
+              </div>
+            </div>
+          </div>
+
+          {/* Government Schemes */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm lg:col-span-2">
+            <SectionHeader icon={Bookmark} title="Government Scheme Filters" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1">Annual Income</label>
+                <select name="income" value={formData.income} onChange={handleChange} className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-teal-500">
+                  <option value="">Select</option>
+                  <option value="Below 8 Lakh">Below ₹8 Lakh</option>
+                  <option value="8 Lakh - 15 Lakh">₹8 Lakh - ₹15 Lakh</option>
+                  <option value="Above 15 Lakh">Above ₹15 Lakh</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1">Category</label>
+                <select name="category" value={formData.category} onChange={handleChange} className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-teal-500">
+                  <option value="">Select</option>
+                  {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1">State</label>
+                <input name="state" value={formData.state} onChange={handleChange} className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-teal-500" />
               </div>
             </div>
           </div>

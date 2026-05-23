@@ -260,6 +260,9 @@ const Schemes = () => {
             {eligibleSchemes.length === 0 && " Update your profile in Profile section to check eligibility."}
           </p>
         </div>
+        <button onClick={() => window.location.href = '/dashboard/profile'} className="bg-white text-teal-700 px-6 py-3 rounded-xl font-bold shadow-md hover:shadow-lg transition-all w-full md:w-auto text-center">
+          Update Profile Info
+        </button>
       </div>
 
       {/* No data warning */}
